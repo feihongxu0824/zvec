@@ -1,4 +1,4 @@
-name: android-cross-build
+name: Android Cross Build
 
 on:
   workflow_call:
