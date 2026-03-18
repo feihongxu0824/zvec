@@ -20,10 +20,15 @@ permissions:
   contents: read
 
 jobs:
+  # Code quality checks (fast, run first)
+  lint:
+    uses: ./.github/workflows/lint.yml
+
   build-android:
     # sdkmanager and other Android tools are x86‑only; ARM runners fail with exit code 1
     # switch back to an x86 image so the setup-android action can install the SDK
     runs-on: ubuntu-24.04
+    needs: lint
     strategy:
       fail-fast: false
       matrix:
