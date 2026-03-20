@@ -1,7 +1,7 @@
 name: Auto Assign PR
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, reopened, ready_for_review]
 
 permissions:
@@ -11,6 +11,13 @@ jobs:
   auto-assign:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout for config
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          sparse-checkout: .github/auto-assign-config.yml
+          sparse-checkout-cone-mode: false
+
       - name: Auto Assign PR Author
         uses: kentaro-m/auto-assign-action@v2.0.0
         with:
