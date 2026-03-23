@@ -6,6 +6,7 @@
 
 # .github directory
 /.github/               @Cuiyus
+/python/                @Cuiyus
 
 # cmake, examples, scripts
 /cmake/                 @egolearner
