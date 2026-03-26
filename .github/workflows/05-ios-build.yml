@@ -1,0 +1,136 @@
+name: iOS Cross Build
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: SIMULATORARM64
+            arch: arm64
+            sdk: iphonesimulator
+            test_on_simulator: true
+          - platform: OS
+            arch: arm64
+            sdk: iphoneos
+            test_on_simulator: false
+
+    name: iOS (${{ matrix.platform }})
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Cache host protoc build
+        uses: actions/cache@v5
+        with:
+          path: build_host
+          key: macos-host-protoc-${{ hashFiles('src/**', 'CMakeLists.txt') }}
+          restore-keys: |
+            macos-host-protoc-
+
+      - name: Build host protoc
+        run: |
+          if [ ! -f "build_host/bin/protoc" ]; then
+            cmake -S . -B build_host -DCMAKE_BUILD_TYPE=Release
+            cmake --build build_host --target protoc --parallel $(sysctl -n hw.ncpu)
+          else
+            echo "Using cached host protoc"
+          fi
+
+      - name: Cache iOS build
+        uses: actions/cache@v5
+        with:
+          path: build_ios_${{ matrix.platform }}
+          key: ios-build-${{ matrix.platform }}-${{ hashFiles('src/**', 'CMakeLists.txt', 'cmake/**', 'thirdparty/**') }}
+
+      - name: Configure and Build
+        run: |
+          git submodule foreach --recursive 'git stash --include-untracked' || true
+
+          SDK_PATH=$(xcrun --sdk ${{ matrix.sdk }} --show-sdk-path)
+          NPROC=$(sysctl -n hw.ncpu)
+
+          cmake -S . -B build_ios_${{ matrix.platform }} \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET="13.0" \
+            -DCMAKE_OSX_ARCHITECTURES="${{ matrix.arch }}" \
+            -DCMAKE_OSX_SYSROOT="$SDK_PATH" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DBUILD_PYTHON_BINDINGS=OFF \
+            -DBUILD_TOOLS=OFF \
+            -DCMAKE_INSTALL_PREFIX="./install" \
+            -DGLOBAL_CC_PROTOBUF_PROTOC="$GITHUB_WORKSPACE/build_host/bin/protoc" \
+            -DIOS=ON
+
+          cmake --build build_ios_${{ matrix.platform }} --parallel $NPROC
+
+      - name: Build test targets
+        if: matrix.test_on_simulator
+        run: |
+          NPROC=$(sysctl -n hw.ncpu)
+          cmake --build build_ios_${{ matrix.platform }} --target arrow_ipc_writer_test --parallel $NPROC
+          cmake --build build_ios_${{ matrix.platform }} --target collection_test --parallel $NPROC
+          cmake --build build_ios_${{ matrix.platform }} --target data_generator --parallel $NPROC
+
+      - name: Boot iOS Simulator
+        if: matrix.test_on_simulator
+        run: |
+          DEVICE_ID=$(xcrun simctl list devices available -j \
+            | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data['devices'].items():
+              if 'iOS' in runtime:
+                  for d in devices:
+                      if 'iPhone' in d['name'] and d['isAvailable']:
+                          print(d['udid'])
+                          sys.exit(0)
+          sys.exit(1)
+          ")
+          echo "DEVICE_ID=$DEVICE_ID" >> $GITHUB_ENV
+          xcrun simctl boot "$DEVICE_ID"
+          echo "Booted simulator: $DEVICE_ID"
+
+      - name: Run data_generator (smoke test)
+        if: matrix.test_on_simulator
+        run: |
+          xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/data_generator.app
+          xcrun simctl launch --console "$DEVICE_ID" com.zvec.data_generator || true
+
+      - name: Run arrow_ipc_writer_test
+        if: matrix.test_on_simulator
+        run: |
+          xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/arrow_ipc_writer_test.app
+          xcrun simctl launch --console "$DEVICE_ID" com.zvec.arrow_ipc_writer_test 2>&1 | tee /tmp/arrow_ipc_writer_test.log
+          if grep -q '\[  FAILED  \]' /tmp/arrow_ipc_writer_test.log; then
+            echo "::error::arrow_ipc_writer_test has failing tests"
+            exit 1
+          fi
+          grep -q '\[  PASSED  \]' /tmp/arrow_ipc_writer_test.log
+
+      - name: Run collection_test (all cases)
+        if: matrix.test_on_simulator
+        run: |
+          xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/collection_test.app
+          xcrun simctl launch --console "$DEVICE_ID" com.zvec.collection_test 2>&1 | tee /tmp/collection_test.log
+          if grep -q '\[  FAILED  \]' /tmp/collection_test.log; then
+            echo "::error::collection_test has failing tests:"
+            grep '\[  FAILED  \]' /tmp/collection_test.log
+            exit 1
+          fi
+          grep -q '\[  PASSED  \]' /tmp/collection_test.log
+
+      - name: Shutdown Simulator
+        if: matrix.test_on_simulator && always()
+        run: |
+          xcrun simctl shutdown "$DEVICE_ID" || true

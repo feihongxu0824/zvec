@@ -70,3 +70,8 @@ jobs:
     name: Build & Test (android)
     needs: lint
     uses: ./.github/workflows/04-android-build.yml
+
+  build-ios:
+    name: Build & Test (iOS)
+    needs: lint
+    uses: ./.github/workflows/05-ios-build.yml

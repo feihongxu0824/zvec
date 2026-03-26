@@ -147,6 +147,12 @@ if(MSVC)
   return()
 endif()
 
+# iOS: Skip -march flags, architecture is controlled by CMAKE_OSX_ARCHITECTURES
+if(IOS OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
+  message(STATUS "iOS build detected, skipping -march flags (controlled by CMAKE_OSX_ARCHITECTURES)")
+  return()
+endif()
+
 if(NOT AUTO_DETECT_ARCH)
   if(ENABLE_NATIVE)
     add_arch_flag("-march=native" NATIVE ENABLE_NATIVE)

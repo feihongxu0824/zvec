@@ -16,12 +16,13 @@ file(GLOB_RECURSE ALL_DB_SRCS *.cc *.c *.h)
 cc_library(
   NAME zvec_db STATIC STRICT SRCS_NO_GLOB
   SRCS ${ALL_DB_SRCS} ${CMAKE_CURRENT_BINARY_DIR}/proto/zvec.pb.cc
-  INCS . ${CMAKE_CURRENT_BINARY_DIR}
+  INCS . ${CMAKE_CURRENT_BINARY_DIR} ${gflags_INCLUDE_DIR}
   PUBINCS ${PROJECT_ROOT_DIR}/src/include
   LIBS 
     zvec_ailego
     zvec_core
     glog
+    gflags
     roaring
     rocksdb
     antlr4
