@@ -42,7 +42,7 @@ jobs:
       - name: Build host protoc
         run: |
           if [ ! -f "build_host/bin/protoc" ]; then
-            cmake -S . -B build_host -DCMAKE_BUILD_TYPE=Release
+            cmake -S . -B build_host -DCMAKE_BUILD_TYPE=Release -DCMAKE_POLICY_VERSION_MINIMUM=3.5
             cmake --build build_host --target protoc --parallel $(sysctl -n hw.ncpu)
           else
             echo "Using cached host protoc"
@@ -71,7 +71,8 @@ jobs:
             -DBUILD_TOOLS=OFF \
             -DCMAKE_INSTALL_PREFIX="./install" \
             -DGLOBAL_CC_PROTOBUF_PROTOC="$GITHUB_WORKSPACE/build_host/bin/protoc" \
-            -DIOS=ON
+            -DIOS=ON \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5
 
           cmake --build build_ios_${{ matrix.platform }} --parallel $NPROC
 
