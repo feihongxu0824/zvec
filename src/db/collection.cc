@@ -1448,7 +1448,7 @@ Result<WriteResults> CollectionImpl::write_impl(std::vector<Doc> &docs,
   // validate write batch size
   if (docs.size() > kMaxWriteBatchSize) {
     CHECK_RETURN_STATUS_EXPECTED(Status::InvalidArgument(
-        "Too many docs: ", docs.size(), " exceeds max write batch size ",
+        "Too many docs: ", docs.size(), " exceeds max write batch size of ",
         kMaxWriteBatchSize));
   }
 
