@@ -301,7 +301,7 @@
 ##      )
 ##
 
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 include(CMakeParseArguments)
 
 # Using AppleClang instead of Clang (Compiler id)
@@ -2159,7 +2159,7 @@ function(_fetch_content)
 
   set(
       CMAKELISTS_CONTENT
-      "cmake_minimum_required(VERSION 3.1)\n"
+      "cmake_minimum_required(VERSION 3.13)\n"
       "project(${DL_ARGS_NAME})\n"
       "include(ExternalProject)\n"
       "ExternalProject_Add(\n"
