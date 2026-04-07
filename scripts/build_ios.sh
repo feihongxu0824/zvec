@@ -11,15 +11,12 @@ IOS_DEPLOYMENT_TARGET="13.0"
 case "$PLATFORM" in
     "OS")
         ARCH="arm64"
-        CMAKE_SYSTEM_NAME="iOS"
         ;;
     "SIMULATOR64")
         ARCH="x86_64"
-        CMAKE_SYSTEM_NAME="iOS"
         ;;
     "SIMULATORARM64")
         ARCH="arm64"
-        CMAKE_SYSTEM_NAME="iOS"
         ;;
     *)
         echo "error: Unknown platform '$PLATFORM'"
@@ -39,6 +36,9 @@ echo "  iOS Deployment Target: $IOS_DEPLOYMENT_TARGET"
 
 # step1: use host env to compile protoc
 echo "step1: building protoc for host..."
+
+git submodule foreach --recursive 'git stash --include-untracked'
+
 HOST_BUILD_DIR="build_host"
 mkdir -p $HOST_BUILD_DIR
 cd $HOST_BUILD_DIR
@@ -63,10 +63,8 @@ cd $BUILD_DIR
 # Determine SDK and additional flags based on platform
 if [ "$PLATFORM" = "OS" ]; then
     SDK_NAME="iphoneos"
-    ENABLE_BITCODE="ON"
 else
     SDK_NAME="iphonesimulator"
-    ENABLE_BITCODE="OFF"
 fi
 
 SDK_PATH=$(xcrun --sdk $SDK_NAME --show-sdk-path)
@@ -82,7 +80,6 @@ cmake \
     -DBUILD_TOOLS=OFF \
     -DCMAKE_INSTALL_PREFIX="./install" \
     -DGLOBAL_CC_PROTOBUF_PROTOC=$PROTOC_EXECUTABLE \
-    -DENABLE_BITCODE="$ENABLE_BITCODE" \
     -DIOS=ON \
     ../
 
@@ -94,3 +91,8 @@ echo "step2: Done!!!"
 echo ""
 echo "Build completed successfully!"
 echo "Output directory: $CURRENT_DIR/$BUILD_DIR"
+
+# Test On MacOS15
+# 1: xcrun simctl boot "iPhone 16" 
+# 2: cd $BUILD_DIR
+# 3: xcrun simctl launch --console booted com.zvec.collection_test
