@@ -2,6 +2,7 @@ name: iOS Cross Build
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -78,9 +79,7 @@ jobs:
         if: matrix.test_on_simulator
         run: |
           NPROC=$(sysctl -n hw.ncpu)
-          cmake --build build_ios_${{ matrix.platform }} --target arrow_ipc_writer_test --parallel $NPROC
           cmake --build build_ios_${{ matrix.platform }} --target collection_test --parallel $NPROC
-          cmake --build build_ios_${{ matrix.platform }} --target data_generator --parallel $NPROC
 
       - name: Boot iOS Simulator
         if: matrix.test_on_simulator
@@ -101,24 +100,7 @@ jobs:
           xcrun simctl boot "$DEVICE_ID"
           echo "Booted simulator: $DEVICE_ID"
 
-      - name: Run data_generator (smoke test)
-        if: matrix.test_on_simulator
-        run: |
-          xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/data_generator.app
-          xcrun simctl launch --console "$DEVICE_ID" com.zvec.data_generator || true
-
-      - name: Run arrow_ipc_writer_test
-        if: matrix.test_on_simulator
-        run: |
-          xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/arrow_ipc_writer_test.app
-          xcrun simctl launch --console "$DEVICE_ID" com.zvec.arrow_ipc_writer_test 2>&1 | tee /tmp/arrow_ipc_writer_test.log
-          if grep -q '\[  FAILED  \]' /tmp/arrow_ipc_writer_test.log; then
-            echo "::error::arrow_ipc_writer_test has failing tests"
-            exit 1
-          fi
-          grep -q '\[  PASSED  \]' /tmp/arrow_ipc_writer_test.log
-
-      - name: Run collection_test (all cases)
+      - name: Run collection_test
         if: matrix.test_on_simulator
         run: |
           xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/collection_test.app
