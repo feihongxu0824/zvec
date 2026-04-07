@@ -65,8 +65,7 @@ jobs:
           CMAKE_BUILD_PARALLEL_LEVEL="$NPROC" \
           python -m pip install -v . \
             --no-build-isolation \
-            --config-settings="cmake.build-type=COVERAGE" \
-            --config-settings='cmake.define.ENABLE_ZEN3="ON"'
+            --config-settings="cmake.build-type=COVERAGE"
         shell: bash
 
       - name: Run Python Tests with Coverage
