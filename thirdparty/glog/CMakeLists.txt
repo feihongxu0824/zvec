@@ -1,12 +1,7 @@
 set(BUILD_TESTING OFF CACHE BOOL "Disable Unit Tests" FORCE)
 set(WITH_GFLAGS OFF CACHE BOOL "Disable find_package(gflags) in glog" FORCE)
 set(WITH_UNWIND OFF CACHE BOOL "Disable find_package(unwind) in glog" FORCE)
-set(HAVE_LIB_GFLAGS FALSE CACHE BOOL "" FORCE)
-set(gflags_FOUND FALSE CACHE BOOL "" FORCE)
-
-# Disable glog install to avoid export conflicts
-set(INSTALL_HEADERS OFF CACHE BOOL "Disable install" FORCE)
-set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build static lib" FORCE)
+set(HAVE_LIB_GFLAGS TRUE CACHE BOOL "")
 
 if(NOT MSVC)
 add_compile_options(-Wno-deprecated-declarations)
@@ -16,10 +11,6 @@ set(GLOG_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/glog-0.5.0)
 if (ANDROID)
     set(GLOG_ANDROID_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/glog.android.patch)
     apply_patch_once("glog_android_fix" "${GLOG_SRC_DIR}" "${GLOG_ANDROID_PATCH}")
-elseif(IOS)
-    # iOS uses the same patch as non-Android platforms
-    set(GLOG_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/glog.patch)
-    apply_patch_once("glog_fix" "${GLOG_SRC_DIR}" "${GLOG_PATCH}")
 else()
     set(GLOG_PATCH ${CMAKE_CURRENT_SOURCE_DIR}/glog.patch)
     apply_patch_once("glog_fix" "${GLOG_SRC_DIR}" "${GLOG_PATCH}")
@@ -31,8 +22,7 @@ add_subdirectory(glog-0.5.0)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${_SAVED_CMAKE_ARCHIVE_OUTPUT_DIRECTORY})
 unset(_SAVED_CMAKE_ARCHIVE_OUTPUT_DIRECTORY)
 
-# Only add dependency when gflags is being used
-# add_dependencies(glog gflags)
+add_dependencies(glog gflags)
 
 if(MSVC)
     # Modern MSVC (1900+/VS2015+) provides snprintf in the CRT.

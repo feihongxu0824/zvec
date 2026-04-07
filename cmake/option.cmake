@@ -188,9 +188,8 @@ function(setup_compiler_march_for_x86 VAR_NAME_SSE VAR_NAME_AVX2 VAR_NAME_AVX512
   endforeach()
 endfunction()
 
-# iOS: Skip -march flags, architecture is controlled by CMAKE_OSX_ARCHITECTURES
+# iOS: Skip -march flags and OpenMP; architecture is controlled by CMAKE_OSX_ARCHITECTURES
 if(IOS OR CMAKE_SYSTEM_NAME STREQUAL "iOS")
-  message(STATUS "iOS build detected, skipping -march flags (controlled by CMAKE_OSX_ARCHITECTURES)")
   return()
 endif()
 

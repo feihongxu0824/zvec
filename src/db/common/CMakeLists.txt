@@ -6,10 +6,9 @@ cc_library(
     NAME zvec_common STATIC STRICT ALWAYS_LINK
     SRCS *.cc
     LIBS    glog
-            gflags
             zvec_ailego
             roaring
             rocksdb
-    INCS . ${gflags_INCLUDE_DIR}
+    INCS .
     VERSION "${PROXIMA_ZVEC_VERSION}"
 )
