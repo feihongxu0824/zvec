@@ -7,7 +7,7 @@ on:
       api:
         description: 'Android API level'
         required: false
-        default: '35'
+        default: '34'
         type: string
 
 permissions:
@@ -24,7 +24,7 @@ jobs:
       fail-fast: false
       matrix:
         abi: [arm64-v8a]
-        api: ${{ github.event.inputs.api && fromJSON(format('["{0}"]', github.event.inputs.api)) || fromJSON('["35"]') }}
+        api: ${{ github.event.inputs.api && fromJSON(format('["{0}"]', github.event.inputs.api)) || fromJSON('["34"]') }}
     env:
       CCACHE_BASEDIR: ${{ github.workspace }}
       CCACHE_NOHASHDIR: '1'
