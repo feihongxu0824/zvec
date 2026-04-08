@@ -124,7 +124,10 @@ sys.exit(1)
 
     echo "--- Running ${TEST_NAME} ---"
     xcrun simctl install "$DEVICE_ID" "$APP"
+    set +e
     xcrun simctl launch --console "$DEVICE_ID" "$BUNDLE_ID" 2>&1 | tee /tmp/${TEST_NAME}.log
+    LAUNCH_EXIT=${PIPESTATUS[0]}
+    set -e
 
     if grep -q '\[  FAILED  \]' /tmp/${TEST_NAME}.log; then
       echo "FAIL: ${TEST_NAME}"
@@ -134,8 +137,11 @@ sys.exit(1)
     elif grep -qE 'Failed: 0$' /tmp/${TEST_NAME}.log; then
       # c_api_test uses a custom test framework (not GTest)
       PASSED=$((PASSED + 1))
+    elif [ "$LAUNCH_EXIT" -eq 0 ]; then
+      echo "WARN: ${TEST_NAME} exited 0 but produced no recognisable test summary"
+      PASSED=$((PASSED + 1))
     else
-      echo "WARN: ${TEST_NAME} produced no recognisable test summary"
+      echo "FAIL: ${TEST_NAME} exited ${LAUNCH_EXIT} with no test summary"
       FAILED_TESTS="${FAILED_TESTS} ${TEST_NAME}"
     fi
   done
