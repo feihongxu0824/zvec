@@ -80,7 +80,7 @@ jobs:
         if: matrix.test_on_simulator
         run: |
           NPROC=$(sysctl -n hw.ncpu)
-          cmake --build build_ios_${{ matrix.platform }} --target collection_test --parallel $NPROC
+          cmake --build build_ios_${{ matrix.platform }} --target unittest --parallel $NPROC
 
       - name: Boot iOS Simulator
         if: matrix.test_on_simulator
@@ -101,17 +101,43 @@ jobs:
           xcrun simctl boot "$DEVICE_ID"
           echo "Booted simulator: $DEVICE_ID"
 
-      - name: Run collection_test
+      - name: Run all tests on simulator
         if: matrix.test_on_simulator
         run: |
-          xcrun simctl install "$DEVICE_ID" build_ios_${{ matrix.platform }}/bin/collection_test.app
-          xcrun simctl launch --console "$DEVICE_ID" com.zvec.collection_test 2>&1 | tee /tmp/collection_test.log
-          if grep -q '\[  FAILED  \]' /tmp/collection_test.log; then
-            echo "::error::collection_test has failing tests:"
-            grep '\[  FAILED  \]' /tmp/collection_test.log
+          FAILED_TESTS=""
+          PASSED=0
+          TOTAL=0
+
+          for APP in build_ios_${{ matrix.platform }}/bin/*_test.app; do
+            [ -d "$APP" ] || continue
+            TEST_NAME=$(basename "$APP" .app)
+            BUNDLE_ID="com.zvec.${TEST_NAME}"
+            TOTAL=$((TOTAL + 1))
+
+            echo "::group::Running ${TEST_NAME}"
+            xcrun simctl install "$DEVICE_ID" "$APP"
+            xcrun simctl launch --console "$DEVICE_ID" "$BUNDLE_ID" 2>&1 | tee /tmp/${TEST_NAME}.log
+
+            if grep -q '\[  FAILED  \]' /tmp/${TEST_NAME}.log; then
+              echo "::error::${TEST_NAME} has failing tests"
+              FAILED_TESTS="${FAILED_TESTS} ${TEST_NAME}"
+            elif grep -q '\[  PASSED  \]' /tmp/${TEST_NAME}.log; then
+              PASSED=$((PASSED + 1))
+            elif grep -qE 'Failed: 0$' /tmp/${TEST_NAME}.log; then
+              # c_api_test uses a custom test framework (not GTest)
+              PASSED=$((PASSED + 1))
+            else
+              echo "::warning::${TEST_NAME} produced no recognisable test summary"
+              FAILED_TESTS="${FAILED_TESTS} ${TEST_NAME}"
+            fi
+            echo "::endgroup::"
+          done
+
+          echo "Test summary: ${PASSED}/${TOTAL} passed"
+          if [ -n "$FAILED_TESTS" ]; then
+            echo "::error::Failed tests:${FAILED_TESTS}"
             exit 1
           fi
-          grep -q '\[  PASSED  \]' /tmp/collection_test.log
 
       - name: Shutdown Simulator
         if: matrix.test_on_simulator && always()

@@ -314,11 +314,16 @@ enable_testing()
 
 # Add unittest target
 if(NOT TARGET unittest)
-  add_custom_target(
-      unittest
-      COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
-      --build-config $<CONFIGURATION>
-    )
+  if(IOS)
+    # iOS: build-only target; tests are run on simulator separately
+    add_custom_target(unittest)
+  else()
+    add_custom_target(
+        unittest
+        COMMAND ${CMAKE_CTEST_COMMAND} --output-on-failure
+        --build-config $<CONFIGURATION>
+      )
+  endif()
 endif()
 
 # Directories of target output
@@ -1068,6 +1073,19 @@ function(cc_test)
   # iOS: add sandbox helper to redirect CWD to writable directory
   if(IOS)
     list(APPEND CC_ARGS_SRCS "${PROJECT_ROOT_DIR}/tests/ios_test_sandbox.cc")
+    # Arrow's iOS code references CoreFoundation symbols; link Apple frameworks
+    list(APPEND CC_ARGS_LDFLAGS
+      -framework CoreFoundation
+      -framework CoreGraphics
+      -framework CoreData
+      -framework CoreText
+      -framework Security
+      -framework Foundation
+      -Wl,-U,_MallocExtension_ReleaseFreeMemory
+      -Wl,-U,_ProfilerStart
+      -Wl,-U,_ProfilerStop
+      -Wl,-U,_RegisterThriftProtocol
+    )
   endif()
 
   add_executable(${CC_ARGS_NAME} EXCLUDE_FROM_ALL ${CC_ARGS_SRCS})

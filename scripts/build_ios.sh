@@ -88,6 +88,73 @@ CORE_COUNT=$(sysctl -n hw.ncpu)
 make -j$CORE_COUNT
 
 echo "step2: Done!!!"
+
+# step3: build and run all unit tests on simulator
+if [ "$PLATFORM" != "OS" ]; then
+  echo "step3: building and running unit tests on simulator..."
+
+  make -j$CORE_COUNT unittest
+
+  # Boot simulator
+  DEVICE_ID=$(xcrun simctl list devices available -j \
+    | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+for runtime, devices in data['devices'].items():
+    if 'iOS' in runtime:
+        for d in devices:
+            if 'iPhone' in d['name'] and d['isAvailable']:
+                print(d['udid'])
+                sys.exit(0)
+sys.exit(1)
+")
+  xcrun simctl boot "$DEVICE_ID"
+  echo "Booted simulator: $DEVICE_ID"
+
+  # Run all test .app bundles
+  FAILED_TESTS=""
+  PASSED=0
+  TOTAL=0
+
+  for APP in bin/*_test.app; do
+    [ -d "$APP" ] || continue
+    TEST_NAME=$(basename "$APP" .app)
+    BUNDLE_ID="com.zvec.${TEST_NAME}"
+    TOTAL=$((TOTAL + 1))
+
+    echo "--- Running ${TEST_NAME} ---"
+    xcrun simctl install "$DEVICE_ID" "$APP"
+    xcrun simctl launch --console "$DEVICE_ID" "$BUNDLE_ID" 2>&1 | tee /tmp/${TEST_NAME}.log
+
+    if grep -q '\[  FAILED  \]' /tmp/${TEST_NAME}.log; then
+      echo "FAIL: ${TEST_NAME}"
+      FAILED_TESTS="${FAILED_TESTS} ${TEST_NAME}"
+    elif grep -q '\[  PASSED  \]' /tmp/${TEST_NAME}.log; then
+      PASSED=$((PASSED + 1))
+    elif grep -qE 'Failed: 0$' /tmp/${TEST_NAME}.log; then
+      # c_api_test uses a custom test framework (not GTest)
+      PASSED=$((PASSED + 1))
+    else
+      echo "WARN: ${TEST_NAME} produced no recognisable test summary"
+      FAILED_TESTS="${FAILED_TESTS} ${TEST_NAME}"
+    fi
+  done
+
+  # Shutdown simulator
+  xcrun simctl shutdown "$DEVICE_ID" || true
+
+  echo ""
+  echo "Test summary: ${PASSED}/${TOTAL} passed"
+  if [ -n "$FAILED_TESTS" ]; then
+    echo "Failed tests:${FAILED_TESTS}"
+    exit 1
+  fi
+
+  echo "step3: Done!!!"
+else
+  echo "Skipping tests (device build cannot run on simulator)"
+fi
+
 echo ""
 echo "Build completed successfully!"
 echo "Output directory: $CURRENT_DIR/$BUILD_DIR"
