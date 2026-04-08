@@ -2123,6 +2123,9 @@ TEST_F(CollectionTest, Feature_CreateIndex_Vector) {
 }
 
 TEST_F(CollectionTest, Feature_CreateIndex_Scalar) {
+#ifdef __ANDROID__
+  GTEST_SKIP() << "Skipped on Android: emulator filesystem lacks hardlink support (needed by RocksDB checkpoint)";
+#endif
   auto func = [&](std::string field_name, bool enable_optimize,
                   IndexParams::Ptr scalar_index_params = nullptr) {
     FileHelper::RemoveDirectory(col_path);
@@ -2397,6 +2400,9 @@ TEST_F(CollectionTest, Feature_DropIndex_Vector) {
 }
 
 TEST_F(CollectionTest, Feature_DropIndex_Scalar) {
+#ifdef __ANDROID__
+  GTEST_SKIP() << "Skipped on Android: emulator filesystem lacks hardlink support (needed by RocksDB checkpoint)";
+#endif
   auto func = [&](std::string field_name, bool enable_optimize) {
     FileHelper::RemoveDirectory(col_path);
 
