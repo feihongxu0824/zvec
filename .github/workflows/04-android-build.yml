@@ -18,7 +18,7 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: macos-14
+    runs-on: ubuntu-24.04-arm
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -38,7 +38,11 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: brew install ninja ccache
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build git ca-certificates python3 \
+            build-essential make ccache unzip curl
 
       - name: Cache ccache
         uses: actions/cache@v5
@@ -54,14 +58,58 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Install NDK and system image
+      - name: Setup Android SDK
         shell: bash
         run: |
+          # cmdline-tools is a Java application — works on any host architecture
+          ANDROID_HOME="$HOME/android-sdk"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
+
+          curl -sL "https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip" \
+            -o /tmp/cmdline-tools.zip
+          unzip -q /tmp/cmdline-tools.zip -d /tmp/cmdline-extract
+          mv /tmp/cmdline-extract/cmdline-tools "$ANDROID_HOME/cmdline-tools/latest"
+          rm -rf /tmp/cmdline-tools.zip /tmp/cmdline-extract
+
+          export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
           yes | sdkmanager --licenses > /dev/null 2>&1 || true
+
+          # Persist for subsequent steps
+          echo "ANDROID_HOME=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$ANDROID_HOME" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/platform-tools" >> "$GITHUB_PATH"
+          echo "$ANDROID_HOME/emulator" >> "$GITHUB_PATH"
+
+      - name: Install NDK, emulator and system image
+        shell: bash
+        run: |
           sdkmanager --install \
             "ndk;$NDK_VERSION" \
             "platform-tools" \
             "platforms;android-${{ matrix.api }}"
+
+          # Emulator: try standard → canary channel → direct download
+          if sdkmanager --install "emulator" 2>/dev/null; then
+            echo "Emulator installed via sdkmanager"
+          elif sdkmanager --channel=3 --install "emulator" 2>/dev/null; then
+            echo "Emulator installed via canary channel"
+          else
+            echo "sdkmanager has no emulator for this platform, trying direct download..."
+            REPO_XML=$(curl -sL "https://dl.google.com/android/repository/repository2-3.xml")
+            EMU_FILE=$(echo "$REPO_XML" | grep -o 'emulator-linux_aarch64[^"<]*\.zip' | head -1)
+            if [ -n "$EMU_FILE" ]; then
+              echo "Downloading $EMU_FILE ..."
+              curl -sL "https://dl.google.com/android/repository/$EMU_FILE" -o /tmp/emulator.zip
+              unzip -q /tmp/emulator.zip -d "$ANDROID_HOME"
+              rm /tmp/emulator.zip
+            else
+              echo "ERROR: No ARM64 Linux emulator found in SDK repository"
+              echo "Available emulator archives:"
+              echo "$REPO_XML" | grep -o 'emulator-[^"<]*\.zip' | sort -u
+              exit 1
+            fi
+          fi
 
           # Install arm64-v8a system image (try variants in order of availability)
           sdkmanager --install "system-images;android-${{ matrix.api }};google_apis;arm64-v8a" 2>/dev/null || \
@@ -144,7 +192,7 @@ jobs:
           fi
 
           echo "Building ${#TEST_NAMES[@]} test executables..."
-          ninja -C "$BUILD_DIR" -j$(sysctl -n hw.ncpu) "${TEST_NAMES[@]}"
+          ninja -C "$BUILD_DIR" -j$(nproc) "${TEST_NAMES[@]}"
 
       # ── Step 3: start emulator ─────────────────────────────────────────
       - name: 'Step 3: Start Android emulator'
@@ -262,7 +310,7 @@ jobs:
           # Push helper binaries (needed by crash_recovery tests which fork+exec them)
           echo "Pushing helper binaries..."
           for helper_name in data_generator collection_optimizer; do
-            helper_path=$(find "$BUILD_DIR" -name "$helper_name" -type f -perm +111 ! -name "*_test" 2>/dev/null | head -1)
+            helper_path=$(find "$BUILD_DIR" -name "$helper_name" -type f -executable ! -name "*_test" 2>/dev/null | head -1)
             if [ -n "$helper_path" ]; then
               adb push "$helper_path" "$DEVICE_TEST_DIR/$helper_name" > /dev/null 2>&1
               adb shell "chmod 755 $DEVICE_TEST_DIR/$helper_name"
@@ -287,7 +335,7 @@ jobs:
           # Collect test binaries
           TEST_BINS=()
           for name in "${TEST_NAMES[@]}"; do
-            bin_path=$(find "$BUILD_DIR" -name "$name" -type f -perm +111 2>/dev/null | head -1)
+            bin_path=$(find "$BUILD_DIR" -name "$name" -type f -executable 2>/dev/null | head -1)
             if [ -n "$bin_path" ]; then
               TEST_BINS+=("$bin_path")
             else
