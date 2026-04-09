@@ -18,7 +18,7 @@ env:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-24.04
+    runs-on: macos-14
     timeout-minutes: 120
     strategy:
       fail-fast: false
@@ -38,11 +38,7 @@ jobs:
           submodules: recursive
 
       - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build git ca-certificates python3 \
-            build-essential make ccache
+        run: brew install ninja ccache
 
       - name: Cache ccache
         uses: actions/cache@v5
@@ -58,17 +54,14 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install NDK, emulator and system image
+      - name: Install NDK and system image
         shell: bash
         run: |
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
           sdkmanager --install \
             "ndk;$NDK_VERSION" \
             "platform-tools" \
-            "platforms;android-${{ matrix.api }}" \
-            "emulator"
+            "platforms;android-${{ matrix.api }}"
 
           # Install arm64-v8a system image (try variants in order of availability)
           sdkmanager --install "system-images;android-${{ matrix.api }};google_apis;arm64-v8a" 2>/dev/null || \
@@ -151,7 +144,7 @@ jobs:
           fi
 
           echo "Building ${#TEST_NAMES[@]} test executables..."
-          ninja -C "$BUILD_DIR" -j$(nproc) "${TEST_NAMES[@]}"
+          ninja -C "$BUILD_DIR" -j$(sysctl -n hw.ncpu) "${TEST_NAMES[@]}"
 
       # ── Step 3: start emulator ─────────────────────────────────────────
       - name: 'Step 3: Start Android emulator'
@@ -269,7 +262,7 @@ jobs:
           # Push helper binaries (needed by crash_recovery tests which fork+exec them)
           echo "Pushing helper binaries..."
           for helper_name in data_generator collection_optimizer; do
-            helper_path=$(find "$BUILD_DIR" -name "$helper_name" -type f -executable ! -name "*_test" 2>/dev/null | head -1)
+            helper_path=$(find "$BUILD_DIR" -name "$helper_name" -type f -perm +111 ! -name "*_test" 2>/dev/null | head -1)
             if [ -n "$helper_path" ]; then
               adb push "$helper_path" "$DEVICE_TEST_DIR/$helper_name" > /dev/null 2>&1
               adb shell "chmod 755 $DEVICE_TEST_DIR/$helper_name"
@@ -294,7 +287,7 @@ jobs:
           # Collect test binaries
           TEST_BINS=()
           for name in "${TEST_NAMES[@]}"; do
-            bin_path=$(find "$BUILD_DIR" -name "$name" -type f -executable 2>/dev/null | head -1)
+            bin_path=$(find "$BUILD_DIR" -name "$name" -type f -perm +111 2>/dev/null | head -1)
             if [ -n "$bin_path" ]; then
               TEST_BINS+=("$bin_path")
             else
