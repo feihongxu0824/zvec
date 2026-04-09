@@ -223,8 +223,8 @@ TEST_F(CollectionTest, Feature_CreateAndOpen_PathValidate) {
                                             "v1.2_alpha-beta",
                                             ".hidden",
                                             "file.txt",
-                                            "/tmp/absolute/path",
-                                            "/tmp/a/b/c",
+                                            "abs_test/nested/path",
+                                            "nested/a/b/c",
                                             "_",
                                             "-",
                                             "./tmp"};
