@@ -29,50 +29,32 @@ endif()
 
 set(ZVEC_INCLUDE_DIR ${CMAKE_BINARY_DIR}/../../../src/include)
 set(ZVEC_GENERATED_INCLUDE_DIR ${CMAKE_BINARY_DIR}/../../../${HOST_BUILD_DIR}/src/generated)
-
-# On Windows, libraries are in Debug/Release subdirectories
-if(WIN32)
-    set(ZVEC_LIB_DIR ${CMAKE_BINARY_DIR}/../../../${HOST_BUILD_DIR}/lib/$<CONFIG>)
-else()
-    set(ZVEC_LIB_DIR ${CMAKE_BINARY_DIR}/../../../${HOST_BUILD_DIR}/lib)
-endif()
+set(ZVEC_LIB_DIR ${CMAKE_BINARY_DIR}/../../../${HOST_BUILD_DIR}/lib)
 
 # Add include and library search paths
 include_directories(${ZVEC_INCLUDE_DIR} ${ZVEC_GENERATED_INCLUDE_DIR})
 link_directories(${ZVEC_LIB_DIR})
 
+# Support multi-config builds (MSVC puts libs in Debug/Release subdirectories)
+if(CMAKE_BUILD_TYPE)
+    link_directories(${ZVEC_LIB_DIR}/${CMAKE_BUILD_TYPE})
+endif()
+
 # Find required packages
 find_package(Threads REQUIRED)
 
-# Create INTERFACE target for zvec_c_api with platform-specific linking
+# Create INTERFACE target for zvec_c_api (fat shared library)
+# No whole-archive flags needed — all symbols are already resolved in the .so/.dylib
 add_library(zvec-c-api INTERFACE)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-    target_link_libraries(zvec-c-api INTERFACE
-        -Wl,--whole-archive
-        -lzvec_c_api
-        -Wl,--no-whole-archive
-        -Wl,--start-group
-        -Wl,--end-group
-    )
-elseif(APPLE)
-    # On macOS, use -Wl,-force_load with full path to ensure all symbols are loaded
-    target_link_libraries(zvec-c-api INTERFACE
-        -Wl,-force_load
-        ${ZVEC_LIB_DIR}/libzvec_c_api.dylib
-    )
-elseif(ANDROID)
-    target_link_libraries(zvec-c-api INTERFACE
-        -Wl,--whole-archive
-        -lzvec_c_api
-        -Wl,--no-whole-archive
-    )
-elseif(WIN32)
-    target_link_libraries(zvec-c-api INTERFACE
-        zvec_c_api
-    )
-    target_link_options(zvec-c-api INTERFACE "/WHOLEARCHIVE:zvec_c_api")
-else()
-    message(FATAL_ERROR "Unsupported platform: ${CMAKE_SYSTEM_NAME}")
+target_link_libraries(zvec-c-api INTERFACE
+    zvec_c_api
+    Threads::Threads
+)
+if(NOT WIN32)
+    target_link_libraries(zvec-c-api INTERFACE ${CMAKE_DL_LIBS})
+endif()
+if(APPLE)
+    target_link_options(zvec-c-api INTERFACE -Wl,-rpath,${ZVEC_LIB_DIR})
 endif()
 
 # Basic example
