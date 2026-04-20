@@ -51,11 +51,16 @@ endif()
 
 # Platform-specific whole-archive linking (mirrors binding/c/CMakeLists.txt)
 if(MSVC)
-    target_link_options(zvec_shared PRIVATE
-        ${ZVEC_ALLIN_WA_PREFIX}$<TARGET_FILE:zvec_db>
-        ${ZVEC_ALLIN_WA_PREFIX}$<TARGET_FILE:zvec_core>
-        ${ZVEC_ALLIN_WA_PREFIX}$<TARGET_FILE:zvec_ailego>
-        ${ZVEC_ALLIN_WA_PREFIX}$<TARGET_FILE:zvec_turbo>
+    # On MSVC, WINDOWS_EXPORT_ALL_SYMBOLS generates a .def file only from the
+    # target's own object files.  /WHOLEARCHIVE: pulls objects into the DLL but
+    # they are NOT scanned for the .def, leaving the import library empty.
+    # Fix: include static-library objects directly via TARGET_OBJECTS (CMake 3.21+)
+    # so the def-file generator sees every symbol.
+    target_sources(zvec_shared PRIVATE
+        $<TARGET_OBJECTS:zvec_db>
+        $<TARGET_OBJECTS:zvec_core>
+        $<TARGET_OBJECTS:zvec_ailego>
+        $<TARGET_OBJECTS:zvec_turbo>
     )
     target_link_libraries(zvec_shared
         PRIVATE
