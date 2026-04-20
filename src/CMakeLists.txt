@@ -34,6 +34,7 @@ add_library(zvec_shared SHARED
 set_target_properties(zvec_shared PROPERTIES
     OUTPUT_NAME "zvec"
     POSITION_INDEPENDENT_CODE ON
+    WINDOWS_EXPORT_ALL_SYMBOLS ON
 )
 
 # Determine whole-archive flag for current platform

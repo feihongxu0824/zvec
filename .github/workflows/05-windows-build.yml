@@ -97,6 +97,17 @@ jobs:
           cd build
           cmake .. -G Ninja -DCMAKE_BUILD_TYPE=Release
           cmake --build . --config Release --parallel $env:NPROC
+
+          # Copy zvec.dll next to the example executables so Windows can find it
+          $libDir = "$env:GITHUB_WORKSPACE\build\lib"
+          foreach ($sub in @($libDir, "$libDir\Release")) {
+            if (Test-Path "$sub\zvec.dll") {
+              Copy-Item "$sub\zvec.dll" -Destination . -Force
+              Write-Host "Copied zvec.dll from $sub"
+              break
+            }
+          }
+
           .\db-example.exe
           .\core-example.exe
           .\ailego-example.exe
