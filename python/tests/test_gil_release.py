@@ -31,7 +31,7 @@ from zvec import (
     Doc,
     FieldSchema,
     HnswIndexParam,
-    VectorQuery,
+    Query,
     VectorSchema,
 )
 
@@ -122,7 +122,7 @@ class TestGILRelease:
             start = time.monotonic()
             for _ in range(100):
                 gil_test_collection.query(
-                    VectorQuery(field_name="vec", vector=query_vec),
+                    Query(field_name="vec", vector=query_vec),
                     topk=100,
                 )
             elapsed = time.monotonic() - start
@@ -162,7 +162,7 @@ class TestGILRelease:
 
         def do_query():
             return gil_test_collection.query(
-                VectorQuery(field_name="vec", vector=query_vec),
+                Query(field_name="vec", vector=query_vec),
                 topk=100,
             )
 
@@ -198,7 +198,7 @@ class TestGILRelease:
                 for i in range(queries_per_thread):
                     vec = [float(thread_id + i) + 0.1 * j for j in range(128)]
                     result = gil_test_collection.query(
-                        VectorQuery(field_name="vec", vector=vec),
+                        Query(field_name="vec", vector=vec),
                         topk=10,
                     )
                     assert len(result) > 0
