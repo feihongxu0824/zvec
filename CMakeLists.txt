@@ -151,9 +151,7 @@ message(STATUS "USE_OSS_MIRROR:${USE_OSS_MIRROR}")
 cc_directory(thirdparty)
 cc_directories(src)
 
-if(BUILD_ZVEC_CORE_ONLY)
-    cc_directory(tests/core)
-else()
+if(NOT BUILD_ZVEC_CORE_ONLY)
     cc_directories(tests)
 endif()
 

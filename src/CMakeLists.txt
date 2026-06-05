@@ -157,39 +157,6 @@ elseif(BUILD_ZVEC_CORE_SHARED AND IOS)
     message(STATUS "Skipping zvec_core_shared on iOS")
 endif()
 
-if(BUILD_ZVEC_CORE_ONLY)
-    set(ZVEC_CORE_TEST_LIB_TARGETS
-        core_framework
-        core_metric
-        core_quantizer
-        core_utility
-        core_interface
-        core_plugin
-        core_mix_reducer
-        core_knn_cluster
-        core_knn_diskann
-        core_knn_flat
-        core_knn_flat_sparse
-        core_knn_hnsw
-        core_knn_hnsw_sparse
-        core_knn_hnsw_rabitq
-        core_knn_ivf
-        core_knn_vamana
-    )
-    foreach(ZVEC_CORE_TEST_LIB ${ZVEC_CORE_TEST_LIB_TARGETS})
-        if(NOT TARGET ${ZVEC_CORE_TEST_LIB})
-            add_library(${ZVEC_CORE_TEST_LIB} INTERFACE)
-            target_link_libraries(
-                ${ZVEC_CORE_TEST_LIB} INTERFACE
-                zvec_core_shared
-                sparsehash
-                magic_enum
-                rabitqlib
-            )
-        endif()
-    endforeach()
-endif()
-
 if(BUILD_ZVEC_SHARED)
     zvec_add_all_in_one_shared(zvec_shared zvec
         LIBS
