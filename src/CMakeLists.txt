@@ -51,17 +51,11 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
 
     if(MSVC)
         foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
-            if(TARGET ${ZVEC_ALLIN_LIB}_objects)
-                target_sources(${TARGET_NAME} PRIVATE
-                    $<TARGET_OBJECTS:${ZVEC_ALLIN_LIB}_objects>
-                )
-            endif()
-            list(APPEND ZVEC_ALLIN_WA_OPTIONS
-                /WHOLEARCHIVE:$<TARGET_FILE:${ZVEC_ALLIN_LIB}>
+            target_sources(${TARGET_NAME} PRIVATE
+                $<TARGET_OBJECTS:${ZVEC_ALLIN_LIB}>
             )
         endforeach()
 
-        target_link_options(${TARGET_NAME} PRIVATE ${ZVEC_ALLIN_WA_OPTIONS})
         target_link_libraries(${TARGET_NAME}
             PRIVATE
                 ${ZVEC_ALLIN_LIBS}
