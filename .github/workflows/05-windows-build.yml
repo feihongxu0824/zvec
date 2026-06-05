@@ -123,10 +123,7 @@ jobs:
           # Copy zvec*.dll next to the example executables so Windows can find them.
           # CMake places DLLs in bin/ (RUNTIME output) and import libs in lib/.
           $buildDir = "$env:GITHUB_WORKSPACE\build"
-          $dllNames = @("zvec.dll")
-          if (Test-Path ".\core-example.exe") {
-            $dllNames += "zvec_core.dll"
-          }
+          $dllNames = @("zvec.dll", "zvec_core.dll")
           foreach ($dllName in $dllNames) {
             $found = $false
             foreach ($sub in @("$buildDir\bin", "$buildDir\bin\Release", "$buildDir\lib", "$buildDir\lib\Release")) {
@@ -150,9 +147,7 @@ jobs:
           }
 
           .\db-example.exe
-          if (Test-Path ".\core-example.exe") {
-            .\core-example.exe
-          }
+          .\core-example.exe
           .\ailego-example.exe
         shell: powershell
 

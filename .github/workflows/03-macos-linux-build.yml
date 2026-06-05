@@ -164,9 +164,7 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
           cmake --build . --parallel $NPROC
           ./db-example
-          if [ -x ./core-example ]; then
-            ./core-example
-          fi
+          ./core-example
           ./ailego-example
         shell: bash
 
