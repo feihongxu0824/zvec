@@ -48,6 +48,7 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
         POSITION_INDEPENDENT_CODE ON
         WINDOWS_EXPORT_ALL_SYMBOLS ON
     )
+    target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
 
     if(MSVC)
         foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})

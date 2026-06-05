@@ -18,7 +18,6 @@ add_subdirectory(magic_enum magic_enum EXCLUDE_FROM_ALL)
 add_subdirectory(RaBitQ-Library RaBitQ-Library EXCLUDE_FROM_ALL)
 
 if(BUILD_ZVEC_CORE_ONLY)
-    add_subdirectory(googletest googletest EXCLUDE_FROM_ALL)
     return()
 endif()
 

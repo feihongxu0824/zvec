@@ -67,7 +67,7 @@ set(ZVEC_CORE_LIBS zvec_ailego zvec_turbo sparsehash magic_enum rabitqlib)
 
 # In normal builds DiskAnn lives in a separate runtime plugin. In core-only
 # builds keep its implementation in libzvec_core so the artifact stays
-# all-in-one and tests/examples do not need another zvec shared library.
+# all-in-one and examples/consumers do not need another zvec shared library.
 if(NOT BUILD_ZVEC_CORE_ONLY OR NOT DISKANN_SUPPORTED)
   list(FILTER ALL_CORE_SRCS EXCLUDE REGEX ".*/algorithm/diskann/.*")
 elseif(DISKANN_SUPPORTED AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
