@@ -120,29 +120,47 @@ jobs:
             -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
           cmake --build . --config Release --parallel $env:NPROC
 
-          # Copy zvec*.dll next to the example executables so Windows can find them.
+          # Copy zvec.dll next to the example executables so Windows can find it.
           # CMake places DLLs in bin/ (RUNTIME output) and import libs in lib/.
           $buildDir = "$env:GITHUB_WORKSPACE\build"
-          $dllNames = @("zvec.dll", "zvec_core.dll")
-          foreach ($dllName in $dllNames) {
-            $found = $false
-            foreach ($sub in @("$buildDir\bin", "$buildDir\bin\Release", "$buildDir\lib", "$buildDir\lib\Release")) {
-              if (Test-Path "$sub\$dllName") {
-                Copy-Item "$sub\$dllName" -Destination . -Force
-                Write-Host "Copied $dllName from $sub"
-                $found = $true
-                break
-              }
+          $found = $false
+          foreach ($sub in @("$buildDir\bin", "$buildDir\bin\Release", "$buildDir\lib", "$buildDir\lib\Release")) {
+            if (Test-Path "$sub\zvec.dll") {
+              Copy-Item "$sub\zvec.dll" -Destination . -Force
+              Write-Host "Copied zvec.dll from $sub"
+              $found = $true
+              break
             }
-            if (-not $found) {
-              Write-Host "WARNING: $dllName not found, searching recursively..."
-              $dll = Get-ChildItem -Path $buildDir -Filter $dllName -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
-              if ($dll) {
-                Copy-Item $dll.FullName -Destination . -Force
-                Write-Host "Copied $dllName from $($dll.DirectoryName)"
-              } else {
-                Write-Error "$dllName not found anywhere under $buildDir"
-              }
+          }
+          if (-not $found) {
+            Write-Host "WARNING: zvec.dll not found, searching recursively..."
+            $dll = Get-ChildItem -Path $buildDir -Filter "zvec.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($dll) {
+              Copy-Item $dll.FullName -Destination . -Force
+              Write-Host "Copied zvec.dll from $($dll.DirectoryName)"
+            } else {
+              Write-Error "zvec.dll not found anywhere under $buildDir"
+            }
+          }
+
+          # core-example links libzvec_core directly, so copy zvec_core.dll too.
+          $found = $false
+          foreach ($sub in @("$buildDir\bin", "$buildDir\bin\Release", "$buildDir\lib", "$buildDir\lib\Release")) {
+            if (Test-Path "$sub\zvec_core.dll") {
+              Copy-Item "$sub\zvec_core.dll" -Destination . -Force
+              Write-Host "Copied zvec_core.dll from $sub"
+              $found = $true
+              break
+            }
+          }
+          if (-not $found) {
+            Write-Host "WARNING: zvec_core.dll not found, searching recursively..."
+            $dll = Get-ChildItem -Path $buildDir -Filter "zvec_core.dll" -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+            if ($dll) {
+              Copy-Item $dll.FullName -Destination . -Force
+              Write-Host "Copied zvec_core.dll from $($dll.DirectoryName)"
+            } else {
+              Write-Error "zvec_core.dll not found anywhere under $buildDir"
             }
           }
 
