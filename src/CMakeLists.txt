@@ -147,7 +147,7 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     )
 endfunction()
 
-if(BUILD_ZVEC_CORE_SHARED)
+if(BUILD_ZVEC_CORE_SHARED AND NOT IOS)
     zvec_add_all_in_one_shared(zvec_core_shared zvec_core
         LIBS
             zvec_core
@@ -159,6 +159,8 @@ if(BUILD_ZVEC_CORE_SHARED)
             ARCHIVE_OUTPUT_NAME zvec_core_shared
         )
     endif()
+elseif(BUILD_ZVEC_CORE_SHARED AND IOS)
+    message(STATUS "Skipping zvec_core_shared on iOS")
 endif()
 
 if(BUILD_ZVEC_CORE_ONLY)

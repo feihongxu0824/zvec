@@ -78,7 +78,7 @@ option(BUILD_ZVEC_CORE_ONLY "Build only zvec-core and its all-in-one shared libr
 message(STATUS "BUILD_ZVEC_CORE_ONLY:${BUILD_ZVEC_CORE_ONLY}")
 
 option(BUILD_ZVEC_SHARED "Build all-in-one C++ shared library libzvec" ON)
-option(BUILD_ZVEC_CORE_SHARED "Build all-in-one zvec-core shared library libzvec_core" OFF)
+option(BUILD_ZVEC_CORE_SHARED "Build all-in-one zvec-core shared library libzvec_core" ON)
 
 option(BUILD_PYTHON_BINDINGS "Build Python bindings using pybind11" OFF)
 option(BUILD_C_BINDINGS "Build C bindings" ON)
