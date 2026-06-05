@@ -154,6 +154,11 @@ if(BUILD_ZVEC_CORE_SHARED)
             zvec_ailego
             zvec_turbo
     )
+    if(WIN32)
+        set_target_properties(zvec_core_shared PROPERTIES
+            ARCHIVE_OUTPUT_NAME zvec_core_shared
+        )
+    endif()
 endif()
 
 if(BUILD_ZVEC_CORE_ONLY)

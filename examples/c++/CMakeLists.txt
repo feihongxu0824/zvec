@@ -26,22 +26,47 @@ option(BUILD_ZVEC_FULL_EXAMPLES "Build examples linked with libzvec" ON)
 
 # Add include and library search paths
 include_directories(${ZVEC_INCLUDE_DIR})
-if(NOT ZVEC_LINK_VIA_CMAKE_TARGET)
-    link_directories(${ZVEC_LIB_DIR})
-    set(CMAKE_BUILD_RPATH ${ZVEC_LIB_DIR})
-endif()
+set(ZVEC_LIB_SEARCH_DIRS ${ZVEC_LIB_DIR})
 
 # Support multi-config builds (MSVC puts libs in Debug/Release subdirectories)
 if(CMAKE_BUILD_TYPE)
     set(ZVEC_CONFIG_LIB_DIR ${ZVEC_LIB_DIR}/${CMAKE_BUILD_TYPE})
-    if(EXISTS "${ZVEC_CONFIG_LIB_DIR}" AND NOT ZVEC_LINK_VIA_CMAKE_TARGET)
-        link_directories(${ZVEC_CONFIG_LIB_DIR})
-        list(APPEND CMAKE_BUILD_RPATH ${ZVEC_CONFIG_LIB_DIR})
+    if(EXISTS "${ZVEC_CONFIG_LIB_DIR}")
+        list(APPEND ZVEC_LIB_SEARCH_DIRS ${ZVEC_CONFIG_LIB_DIR})
     endif()
+endif()
+if(NOT ZVEC_LINK_VIA_CMAKE_TARGET)
+    link_directories(${ZVEC_LIB_SEARCH_DIRS})
+    set(CMAKE_BUILD_RPATH ${ZVEC_LIB_SEARCH_DIRS})
 endif()
 if(WIN32)
     set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 endif()
+
+function(zvec_find_shared_library OUT_VAR LIB_NAME)
+    unset(${OUT_VAR} CACHE)
+    if(WIN32)
+        find_library(${OUT_VAR}
+            NAMES ${LIB_NAME}_shared ${LIB_NAME}
+            PATHS ${ZVEC_LIB_SEARCH_DIRS}
+            NO_DEFAULT_PATH
+        )
+    else()
+        set(ZVEC_ORIGINAL_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
+        if(APPLE)
+            set(CMAKE_FIND_LIBRARY_SUFFIXES ".dylib")
+        else()
+            set(CMAKE_FIND_LIBRARY_SUFFIXES ".so")
+        endif()
+        find_library(${OUT_VAR}
+            NAMES ${LIB_NAME}
+            PATHS ${ZVEC_LIB_SEARCH_DIRS}
+            NO_DEFAULT_PATH
+        )
+        set(CMAKE_FIND_LIBRARY_SUFFIXES "${ZVEC_ORIGINAL_LIBRARY_SUFFIXES}")
+    endif()
+    set(${OUT_VAR} "${${OUT_VAR}}" PARENT_SCOPE)
+endfunction()
 
 # --- Create INTERFACE target for libzvec (all-in-one C++ shared library) ---
 # libzvec.so/.dylib/.dll already bundles all zvec internal components
@@ -51,16 +76,31 @@ add_library(zvec-lib INTERFACE)
 if(TARGET zvec_shared)
     target_link_libraries(zvec-lib INTERFACE zvec_shared)
 else()
-    target_link_libraries(zvec-lib INTERFACE zvec)
+    zvec_find_shared_library(ZVEC_SHARED_LIBRARY zvec)
+    if(ZVEC_SHARED_LIBRARY)
+        target_link_libraries(zvec-lib INTERFACE "${ZVEC_SHARED_LIBRARY}")
+    else()
+        target_link_libraries(zvec-lib INTERFACE zvec)
+    endif()
 endif()
 
 # --- Create INTERFACE target for libzvec_core (core-only all-in-one library) ---
 # The core example intentionally depends only on libzvec_core.
-add_library(zvec-core-lib INTERFACE)
-if(TARGET zvec_core_shared)
-    target_link_libraries(zvec-core-lib INTERFACE zvec_core_shared)
-else()
-    target_link_libraries(zvec-core-lib INTERFACE zvec_core)
+if(BUILD_ZVEC_CORE_EXAMPLE)
+    add_library(zvec-core-lib INTERFACE)
+    if(TARGET zvec_core_shared)
+        target_link_libraries(zvec-core-lib INTERFACE zvec_core_shared)
+    else()
+        zvec_find_shared_library(ZVEC_CORE_SHARED_LIBRARY zvec_core)
+        if(ZVEC_CORE_SHARED_LIBRARY)
+            target_link_libraries(zvec-core-lib INTERFACE "${ZVEC_CORE_SHARED_LIBRARY}")
+        else()
+            message(FATAL_ERROR
+                "libzvec_core shared library was not found in ${ZVEC_LIB_SEARCH_DIRS}. "
+                "Build zvec with -DBUILD_ZVEC_CORE_SHARED=ON or "
+                "-DBUILD_ZVEC_CORE_ONLY=ON, or disable BUILD_ZVEC_CORE_EXAMPLE.")
+        endif()
+    endif()
 endif()
 
 # --- Executables ---
