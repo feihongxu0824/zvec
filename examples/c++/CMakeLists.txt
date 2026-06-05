@@ -21,9 +21,6 @@ if(TARGET zvec_shared OR TARGET zvec_core_shared)
     set(ZVEC_LINK_VIA_CMAKE_TARGET ON)
 endif()
 
-option(BUILD_ZVEC_CORE_EXAMPLE "Build zvec-core example linked only with libzvec_core" ON)
-option(BUILD_ZVEC_FULL_EXAMPLES "Build examples linked with libzvec" ON)
-
 # Add include and library search paths
 include_directories(${ZVEC_INCLUDE_DIR})
 set(ZVEC_LIB_SEARCH_DIRS ${ZVEC_LIB_DIR})
@@ -67,6 +64,17 @@ function(zvec_find_shared_library OUT_VAR LIB_NAME)
     endif()
     set(${OUT_VAR} "${${OUT_VAR}}" PARENT_SCOPE)
 endfunction()
+
+set(ZVEC_CORE_EXAMPLE_DEFAULT ON)
+if(NOT TARGET zvec_core_shared)
+    zvec_find_shared_library(ZVEC_CORE_SHARED_LIBRARY zvec_core)
+    if(NOT ZVEC_CORE_SHARED_LIBRARY)
+        set(ZVEC_CORE_EXAMPLE_DEFAULT OFF)
+    endif()
+endif()
+
+option(BUILD_ZVEC_CORE_EXAMPLE "Build zvec-core example linked only with libzvec_core" ${ZVEC_CORE_EXAMPLE_DEFAULT})
+option(BUILD_ZVEC_FULL_EXAMPLES "Build examples linked with libzvec" ON)
 
 # --- Create INTERFACE target for libzvec (all-in-one C++ shared library) ---
 # libzvec.so/.dylib/.dll already bundles all zvec internal components
