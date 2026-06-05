@@ -73,22 +73,33 @@ if(NOT TARGET zvec_core_shared)
     endif()
 endif()
 
+set(ZVEC_FULL_EXAMPLES_DEFAULT ON)
+if(NOT TARGET zvec_shared)
+    zvec_find_shared_library(ZVEC_SHARED_LIBRARY zvec)
+    if(NOT ZVEC_SHARED_LIBRARY)
+        set(ZVEC_FULL_EXAMPLES_DEFAULT OFF)
+    endif()
+endif()
+
 option(BUILD_ZVEC_CORE_EXAMPLE "Build zvec-core example linked only with libzvec_core" ${ZVEC_CORE_EXAMPLE_DEFAULT})
-option(BUILD_ZVEC_FULL_EXAMPLES "Build examples linked with libzvec" ON)
+option(BUILD_ZVEC_FULL_EXAMPLES "Build examples linked with libzvec" ${ZVEC_FULL_EXAMPLES_DEFAULT})
 
 # --- Create INTERFACE target for libzvec (all-in-one C++ shared library) ---
 # libzvec.so/.dylib/.dll already bundles all zvec internal components
 # (zvec_db, zvec_core, zvec_ailego, zvec_turbo), so no individual dependency
 # libraries need to be specified by the consumer.
-add_library(zvec-lib INTERFACE)
-if(TARGET zvec_shared)
-    target_link_libraries(zvec-lib INTERFACE zvec_shared)
-else()
-    zvec_find_shared_library(ZVEC_SHARED_LIBRARY zvec)
-    if(ZVEC_SHARED_LIBRARY)
-        target_link_libraries(zvec-lib INTERFACE "${ZVEC_SHARED_LIBRARY}")
+if(BUILD_ZVEC_FULL_EXAMPLES)
+    add_library(zvec-lib INTERFACE)
+    if(TARGET zvec_shared)
+        target_link_libraries(zvec-lib INTERFACE zvec_shared)
     else()
-        target_link_libraries(zvec-lib INTERFACE zvec)
+        if(ZVEC_SHARED_LIBRARY)
+            target_link_libraries(zvec-lib INTERFACE "${ZVEC_SHARED_LIBRARY}")
+        else()
+            message(FATAL_ERROR
+                "libzvec shared library was not found in ${ZVEC_LIB_SEARCH_DIRS}. "
+                "Build zvec with -DBUILD_ZVEC_SHARED=ON or disable BUILD_ZVEC_FULL_EXAMPLES.")
+        endif()
     endif()
 endif()
 
