@@ -163,8 +163,10 @@ if(BUILD_ZVEC_CORE_ONLY)
         core_quantizer
         core_utility
         core_interface
+        core_plugin
         core_mix_reducer
         core_knn_cluster
+        core_knn_diskann
         core_knn_flat
         core_knn_flat_sparse
         core_knn_hnsw
