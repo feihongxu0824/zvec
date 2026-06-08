@@ -114,16 +114,8 @@ jobs:
           SMOKE_BUILD="$RUNNER_TEMP/zvec-subproject-build"
 
           mkdir -p "$SMOKE_SOURCE" "$SMOKE_BUILD"
-          cat > "$SMOKE_SOURCE/CMakeLists.txt" <<'EOF'
-          cmake_minimum_required(VERSION 3.13)
-          project(zvec_subproject_smoke LANGUAGES C CXX)
-
-          if(NOT ZVEC_SOURCE_DIR)
-            message(FATAL_ERROR "ZVEC_SOURCE_DIR is required")
-          endif()
-
-          add_subdirectory("${ZVEC_SOURCE_DIR}" zvec)
-          EOF
+          cp "$GITHUB_WORKSPACE/.github/cmake/subproject-integration/CMakeLists.txt" \
+            "$SMOKE_SOURCE/CMakeLists.txt"
 
           cmake -S "$SMOKE_SOURCE" -B "$SMOKE_BUILD" -G Ninja \
             -DZVEC_SOURCE_DIR="$GITHUB_WORKSPACE" \

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13)
-project(zvec_subproject_nightly LANGUAGES C CXX)
+project(zvec_subproject_integration LANGUAGES C CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
