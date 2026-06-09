@@ -151,7 +151,11 @@ message(STATUS "USE_OSS_MIRROR:${USE_OSS_MIRROR}")
 cc_directory(thirdparty)
 cc_directories(src)
 
-if(NOT BUILD_ZVEC_CORE_ONLY)
+if(BUILD_ZVEC_CORE_ONLY)
+    # Keep the include context from tests/CMakeLists.txt for core tests that include tests/test_util.h.
+    include_directories(${PROJECT_ROOT_DIR})
+    cc_directory(tests/core)
+else()
     cc_directories(tests)
 endif()
 
