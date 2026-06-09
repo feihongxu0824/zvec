@@ -48,6 +48,11 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
         POSITION_INDEPENDENT_CODE ON
         WINDOWS_EXPORT_ALL_SYMBOLS ON
     )
+    if(WIN32)
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            ARCHIVE_OUTPUT_NAME "${TARGET_NAME}"
+        )
+    endif()
     target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
 
     if(MSVC)
@@ -149,11 +154,6 @@ if(BUILD_ZVEC_CORE_SHARED AND NOT IOS)
             zvec_ailego
             zvec_turbo
     )
-    if(WIN32)
-        set_target_properties(zvec_core_shared PROPERTIES
-            ARCHIVE_OUTPUT_NAME zvec_core_shared
-        )
-    endif()
 elseif(BUILD_ZVEC_CORE_SHARED AND IOS)
     message(STATUS "Skipping zvec_core_shared on iOS")
 endif()
@@ -161,7 +161,7 @@ endif()
 if(BUILD_ZVEC_SHARED)
     zvec_add_all_in_one_shared(zvec_shared zvec
         LIBS
-            zvec_db
+            zvec
             zvec_core
             zvec_ailego
             zvec_turbo

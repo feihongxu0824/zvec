@@ -31,9 +31,6 @@ namespace {
 // hosts only DiskAnn fails, with a clear, actionable error message, and
 // every other index type stays fully functional.
 int EnsureDiskAnnRuntimeReady() {
-#ifdef ZVEC_CORE_ONLY
-  return 0;
-#else
   static std::once_flag once;
   static int cached_result = 0;
   std::call_once(once, []() {
@@ -62,7 +59,6 @@ int EnsureDiskAnnRuntimeReady() {
     cached_result = core::IndexError_Runtime;
   });
   return cached_result;
-#endif
 }
 
 }  // namespace

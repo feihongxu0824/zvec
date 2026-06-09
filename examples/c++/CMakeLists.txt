@@ -86,7 +86,7 @@ option(BUILD_ZVEC_FULL_EXAMPLES "Build examples linked with libzvec" ${ZVEC_FULL
 
 # --- Create INTERFACE target for libzvec (all-in-one C++ shared library) ---
 # libzvec.so/.dylib/.dll already bundles all zvec internal components
-# (zvec_db, zvec_core, zvec_ailego, zvec_turbo), so no individual dependency
+# (zvec, zvec_core, zvec_ailego, zvec_turbo), so no individual dependency
 # libraries need to be specified by the consumer.
 if(BUILD_ZVEC_FULL_EXAMPLES)
     add_library(zvec-lib INTERFACE)
