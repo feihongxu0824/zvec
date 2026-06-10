@@ -19,7 +19,7 @@ target_link_libraries(zvec_embed_db_example PRIVATE zvec_shared)
 
 add_executable(zvec_embed_core_example
   "${ZVEC_SOURCE_DIR}/examples/c++/core/main.cc")
-target_link_libraries(zvec_embed_core_example PRIVATE zvec_shared)
+target_link_libraries(zvec_embed_core_example PRIVATE zvec_core_shared)
 
 add_executable(zvec_embed_ailego_example
   "${ZVEC_SOURCE_DIR}/examples/c++/ailego/main.cc")
