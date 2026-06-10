@@ -151,15 +151,13 @@ if(BUILD_ZVEC_AILEGO_SHARED)
     )
 endif()
 
-if(BUILD_ZVEC_CORE_SHARED AND NOT IOS)
+if(BUILD_ZVEC_CORE_SHARED)
     zvec_add_all_in_one_shared(zvec_core_shared zvec_core
         LIBS
             zvec_core
             zvec_ailego
             zvec_turbo
     )
-elseif(BUILD_ZVEC_CORE_SHARED AND IOS)
-    message(STATUS "Skipping zvec_core_shared on iOS")
 endif()
 
 if(BUILD_ZVEC_SHARED)
