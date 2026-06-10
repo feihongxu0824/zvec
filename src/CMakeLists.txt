@@ -144,6 +144,13 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     )
 endfunction()
 
+if(BUILD_ZVEC_AILEGO_SHARED)
+    zvec_add_all_in_one_shared(zvec_ailego_shared zvec_ailego
+        LIBS
+            zvec_ailego
+    )
+endif()
+
 if(BUILD_ZVEC_CORE_SHARED AND NOT IOS)
     zvec_add_all_in_one_shared(zvec_core_shared zvec_core
         LIBS
