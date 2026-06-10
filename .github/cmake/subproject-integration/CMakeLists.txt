@@ -9,11 +9,7 @@ if(NOT ZVEC_SOURCE_DIR)
   message(FATAL_ERROR "ZVEC_SOURCE_DIR is required")
 endif()
 
-option(ENABLE_ZVEC_CORE "Validate zvec-core-only subproject integration" OFF)
-
-if(ENABLE_ZVEC_CORE)
-  set(BUILD_ZVEC_CORE_ONLY ON CACHE BOOL "" FORCE)
-endif()
+option(ENABLE_ZVEC_CORE "Validate zvec-core shared library subproject integration" OFF)
 
 add_subdirectory("${ZVEC_SOURCE_DIR}" zvec)
 

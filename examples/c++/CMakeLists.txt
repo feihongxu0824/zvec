@@ -116,8 +116,7 @@ if(BUILD_ZVEC_CORE_EXAMPLE)
         else()
             message(FATAL_ERROR
                 "libzvec_core shared library was not found in ${ZVEC_LIB_SEARCH_DIRS}. "
-                "Build zvec with -DBUILD_ZVEC_CORE_SHARED=ON or "
-                "-DBUILD_ZVEC_CORE_ONLY=ON, or disable BUILD_ZVEC_CORE_EXAMPLE.")
+                "Build zvec with -DBUILD_ZVEC_CORE_SHARED=ON or disable BUILD_ZVEC_CORE_EXAMPLE.")
         endif()
     endif()
 endif()

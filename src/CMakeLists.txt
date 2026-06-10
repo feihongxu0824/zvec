@@ -8,11 +8,8 @@ git_version(ZVEC_VERSION ${CMAKE_CURRENT_SOURCE_DIR})
 cc_directory(ailego)
 cc_directory(turbo)
 cc_directory(core)
-
-if(NOT BUILD_ZVEC_CORE_ONLY)
-    cc_directory(db)
-    cc_directory(binding)
-endif()
+cc_directory(db)
+cc_directory(binding)
 
 # =============================================================================
 # Build ALL-IN-ONE C++ Shared Libraries
