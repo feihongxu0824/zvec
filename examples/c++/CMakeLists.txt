@@ -39,6 +39,7 @@ function(zvec_find_shared_library OUT_VAR LIB_NAME)
             NAMES ${LIB_NAME}_shared ${LIB_NAME}
             PATHS ${ZVEC_LIB_SEARCH_DIRS}
             NO_DEFAULT_PATH
+            NO_CMAKE_FIND_ROOT_PATH
         )
     else()
         set(ZVEC_ORIGINAL_LIBRARY_SUFFIXES ${CMAKE_FIND_LIBRARY_SUFFIXES})
@@ -51,6 +52,7 @@ function(zvec_find_shared_library OUT_VAR LIB_NAME)
             NAMES ${LIB_NAME}
             PATHS ${ZVEC_LIB_SEARCH_DIRS}
             NO_DEFAULT_PATH
+            NO_CMAKE_FIND_ROOT_PATH
         )
         set(CMAKE_FIND_LIBRARY_SUFFIXES "${ZVEC_ORIGINAL_LIBRARY_SUFFIXES}")
     endif()
