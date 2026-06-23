@@ -20,112 +20,6 @@ cc_directory(binding)
 include(GNUInstallDirs)
 find_package(Threads REQUIRED)
 
-function(zvec_get_cxx_export_build_def OUTPUT_VAR TARGET_NAME)
-    if(TARGET_NAME STREQUAL zvec)
-        set(${OUTPUT_VAR} ZVEC_DB_BUILD_SHARED PARENT_SCOPE)
-    elseif(TARGET_NAME STREQUAL zvec_core)
-        set(${OUTPUT_VAR} ZVEC_CORE_BUILD_SHARED PARENT_SCOPE)
-    elseif(TARGET_NAME STREQUAL zvec_ailego)
-        set(${OUTPUT_VAR} ZVEC_AILEGO_BUILD_SHARED PARENT_SCOPE)
-    elseif(TARGET_NAME STREQUAL zvec_turbo)
-        set(${OUTPUT_VAR} ZVEC_TURBO_BUILD_SHARED PARENT_SCOPE)
-    else()
-        set(${OUTPUT_VAR} "" PARENT_SCOPE)
-    endif()
-endfunction()
-
-function(zvec_clone_target_objects_for_shared CLONE_TARGET SOURCE_TARGET)
-    get_target_property(ZVEC_CLONE_SRCS ${SOURCE_TARGET} SOURCES)
-    if(NOT ZVEC_CLONE_SRCS)
-        message(FATAL_ERROR "Target ${SOURCE_TARGET} has no sources to clone")
-    endif()
-
-    get_target_property(ZVEC_CLONE_SOURCE_DIR ${SOURCE_TARGET} SOURCE_DIR)
-    set(ZVEC_CLONE_ABS_SRCS)
-    foreach(ZVEC_CLONE_SRC IN LISTS ZVEC_CLONE_SRCS)
-        if(ZVEC_CLONE_SRC MATCHES "^\\$<")
-            list(APPEND ZVEC_CLONE_ABS_SRCS "${ZVEC_CLONE_SRC}")
-        elseif(IS_ABSOLUTE "${ZVEC_CLONE_SRC}")
-            list(APPEND ZVEC_CLONE_ABS_SRCS "${ZVEC_CLONE_SRC}")
-        else()
-            list(APPEND ZVEC_CLONE_ABS_SRCS "${ZVEC_CLONE_SOURCE_DIR}/${ZVEC_CLONE_SRC}")
-        endif()
-    endforeach()
-
-    add_library(${CLONE_TARGET} OBJECT ${ZVEC_CLONE_ABS_SRCS})
-    set_target_properties(${CLONE_TARGET} PROPERTIES
-        POSITION_INDEPENDENT_CODE ON
-    )
-
-    foreach(ZVEC_CLONE_PROP C_STANDARD CXX_STANDARD C_STANDARD_REQUIRED
-                             CXX_STANDARD_REQUIRED C_EXTENSIONS CXX_EXTENSIONS)
-        get_target_property(ZVEC_CLONE_PROP_VALUE ${SOURCE_TARGET} ${ZVEC_CLONE_PROP})
-        if(ZVEC_CLONE_PROP_VALUE)
-            set_target_properties(${CLONE_TARGET} PROPERTIES
-                ${ZVEC_CLONE_PROP} "${ZVEC_CLONE_PROP_VALUE}"
-            )
-        endif()
-    endforeach()
-
-    foreach(ZVEC_CLONE_PROP INCLUDE_DIRECTORIES INTERFACE_INCLUDE_DIRECTORIES)
-        get_target_property(ZVEC_CLONE_PROP_VALUE ${SOURCE_TARGET} ${ZVEC_CLONE_PROP})
-        if(ZVEC_CLONE_PROP_VALUE)
-            target_include_directories(${CLONE_TARGET} PRIVATE ${ZVEC_CLONE_PROP_VALUE})
-        endif()
-    endforeach()
-
-    foreach(ZVEC_CLONE_PROP SYSTEM_INCLUDE_DIRECTORIES INTERFACE_SYSTEM_INCLUDE_DIRECTORIES)
-        get_target_property(ZVEC_CLONE_PROP_VALUE ${SOURCE_TARGET} ${ZVEC_CLONE_PROP})
-        if(ZVEC_CLONE_PROP_VALUE)
-            target_include_directories(${CLONE_TARGET} SYSTEM PRIVATE ${ZVEC_CLONE_PROP_VALUE})
-        endif()
-    endforeach()
-
-    foreach(ZVEC_CLONE_PROP COMPILE_DEFINITIONS INTERFACE_COMPILE_DEFINITIONS)
-        get_target_property(ZVEC_CLONE_PROP_VALUE ${SOURCE_TARGET} ${ZVEC_CLONE_PROP})
-        if(ZVEC_CLONE_PROP_VALUE)
-            target_compile_definitions(${CLONE_TARGET} PRIVATE ${ZVEC_CLONE_PROP_VALUE})
-        endif()
-    endforeach()
-
-    foreach(ZVEC_CLONE_PROP COMPILE_OPTIONS INTERFACE_COMPILE_OPTIONS)
-        get_target_property(ZVEC_CLONE_PROP_VALUE ${SOURCE_TARGET} ${ZVEC_CLONE_PROP})
-        if(ZVEC_CLONE_PROP_VALUE)
-            target_compile_options(${CLONE_TARGET} PRIVATE ${ZVEC_CLONE_PROP_VALUE})
-        endif()
-    endforeach()
-
-    if(ARGN)
-        target_compile_definitions(${CLONE_TARGET} PRIVATE ${ARGN})
-    endif()
-endfunction()
-
-function(zvec_collect_link_dependencies OUTPUT_VAR)
-    set(ZVEC_COLLECT_SKIP_LIBS ${ARGN})
-    set(ZVEC_COLLECT_DEPS)
-
-    foreach(ZVEC_COLLECT_LIB IN LISTS ZVEC_COLLECT_SKIP_LIBS)
-        foreach(ZVEC_COLLECT_PROP LINK_LIBRARIES INTERFACE_LINK_LIBRARIES)
-            get_target_property(ZVEC_COLLECT_PROP_VALUE ${ZVEC_COLLECT_LIB} ${ZVEC_COLLECT_PROP})
-            if(NOT ZVEC_COLLECT_PROP_VALUE)
-                continue()
-            endif()
-
-            foreach(ZVEC_COLLECT_DEP IN LISTS ZVEC_COLLECT_PROP_VALUE)
-                if(ZVEC_COLLECT_DEP IN_LIST ZVEC_COLLECT_SKIP_LIBS)
-                    continue()
-                endif()
-                list(APPEND ZVEC_COLLECT_DEPS ${ZVEC_COLLECT_DEP})
-            endforeach()
-        endforeach()
-    endforeach()
-
-    if(ZVEC_COLLECT_DEPS)
-        list(REMOVE_DUPLICATES ZVEC_COLLECT_DEPS)
-    endif()
-    set(${OUTPUT_VAR} ${ZVEC_COLLECT_DEPS} PARENT_SCOPE)
-endfunction()
-
 function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     cmake_parse_arguments(ZVEC_ALLIN "" "" "LIBS" ${ARGN})
     if(NOT ZVEC_ALLIN_LIBS)
@@ -160,21 +54,14 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
 
     if(MSVC)
         foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
-            zvec_get_cxx_export_build_def(ZVEC_ALLIN_BUILD_DEF ${ZVEC_ALLIN_LIB})
-            zvec_clone_target_objects_for_shared(
-                ${TARGET_NAME}_${ZVEC_ALLIN_LIB}_objects
-                ${ZVEC_ALLIN_LIB}
-                ${ZVEC_ALLIN_BUILD_DEF}
-            )
             target_sources(${TARGET_NAME} PRIVATE
-                $<TARGET_OBJECTS:${TARGET_NAME}_${ZVEC_ALLIN_LIB}_objects>
+                $<TARGET_OBJECTS:${ZVEC_ALLIN_LIB}>
             )
         endforeach()
 
-        zvec_collect_link_dependencies(ZVEC_ALLIN_LINK_DEPS ${ZVEC_ALLIN_LIBS})
         target_link_libraries(${TARGET_NAME}
             PRIVATE
-                ${ZVEC_ALLIN_LINK_DEPS}
+                ${ZVEC_ALLIN_LIBS}
                 Threads::Threads
         )
     elseif(APPLE)
@@ -284,7 +171,7 @@ function(zvec_enable_cxx_exports TARGET_NAME)
     endforeach()
 endfunction()
 
-if((NOT MSVC) AND (WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED))
+if(WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED)
     if(BUILD_ZVEC_SHARED)
         zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
     endif()
