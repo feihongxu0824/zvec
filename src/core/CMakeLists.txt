@@ -65,11 +65,10 @@ endif()
 # The DiskAnn algorithm is provided by the separate core_knn_diskann library
 # (real on Linux x86_64, stub on other platforms). Including them here causes
 # duplicate symbols and missing -laio when test binaries link both zvec_core
-# (via zvec) and core_knn_diskann.
+# (via zvec) and core_knn_diskann. Keep interface/indexes/diskann_index.cc in
+# zvec_core on all platforms so exported DiskAnnIndex virtual methods have
+# definitions even when the DiskAnn runtime is unsupported.
 list(FILTER ALL_CORE_SRCS EXCLUDE REGEX ".*/algorithm/diskann/.*")
-if(NOT DISKANN_SUPPORTED)
-  list(FILTER ALL_CORE_SRCS EXCLUDE REGEX ".*/interface/indexes/diskann_index\\.cc")
-endif()
 
 set(ZVEC_CORE_LIBS zvec_ailego zvec_turbo sparsehash magic_enum rabitqlib)
 # The plugin loader uses dlopen/dlsym, so link libdl on Linux.
