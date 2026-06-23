@@ -167,7 +167,12 @@ class ZVEC_CORE_API BaseIndexQueryParam {
  public:
   using Pointer = std::shared_ptr<BaseIndexQueryParam>;
 
-  virtual ~BaseIndexQueryParam() = default;
+  BaseIndexQueryParam();
+  BaseIndexQueryParam(const BaseIndexQueryParam &);
+  BaseIndexQueryParam(BaseIndexQueryParam &&) noexcept;
+  BaseIndexQueryParam &operator=(const BaseIndexQueryParam &);
+  BaseIndexQueryParam &operator=(BaseIndexQueryParam &&) noexcept;
+  virtual ~BaseIndexQueryParam();
 
   uint32_t topk = 10;
   bool fetch_vector = false;
@@ -183,58 +188,80 @@ class ZVEC_CORE_API BaseIndexQueryParam {
 struct ZVEC_CORE_API FlatQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<FlatQueryParam>;
 
-  BaseIndexQueryParam::Pointer Clone() const override {
-    return std::make_shared<FlatQueryParam>(*this);
-  }
+  FlatQueryParam();
+  FlatQueryParam(const FlatQueryParam &);
+  FlatQueryParam(FlatQueryParam &&) noexcept;
+  FlatQueryParam &operator=(const FlatQueryParam &);
+  FlatQueryParam &operator=(FlatQueryParam &&) noexcept;
+  ~FlatQueryParam() override;
+
+  BaseIndexQueryParam::Pointer Clone() const override;
 };
 
 struct ZVEC_CORE_API HNSWQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<HNSWQueryParam>;
 
+  HNSWQueryParam();
+  HNSWQueryParam(const HNSWQueryParam &);
+  HNSWQueryParam(HNSWQueryParam &&) noexcept;
+  HNSWQueryParam &operator=(const HNSWQueryParam &);
+  HNSWQueryParam &operator=(HNSWQueryParam &&) noexcept;
+  ~HNSWQueryParam() override;
+
   uint32_t ef_search = kDefaultHnswEfSearch;
   uint32_t prefetch_offset = kDefaultPrefetchOffset;
   uint32_t prefetch_lines = kDefaultPrefetchLines;
 
-  BaseIndexQueryParam::Pointer Clone() const override {
-    return std::make_shared<HNSWQueryParam>(*this);
-  }
+  BaseIndexQueryParam::Pointer Clone() const override;
 };
 
 struct ZVEC_CORE_API HNSWRabitqQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<HNSWRabitqQueryParam>;
 
+  HNSWRabitqQueryParam();
+  HNSWRabitqQueryParam(const HNSWRabitqQueryParam &);
+  HNSWRabitqQueryParam(HNSWRabitqQueryParam &&) noexcept;
+  HNSWRabitqQueryParam &operator=(const HNSWRabitqQueryParam &);
+  HNSWRabitqQueryParam &operator=(HNSWRabitqQueryParam &&) noexcept;
+  ~HNSWRabitqQueryParam() override;
+
   uint32_t ef_search = kDefaultHnswEfSearch;
 
-  BaseIndexQueryParam::Pointer Clone() const override {
-    return std::make_shared<HNSWRabitqQueryParam>(*this);
-  }
+  BaseIndexQueryParam::Pointer Clone() const override;
 };
 
 struct ZVEC_CORE_API IVFQueryParam : public BaseIndexQueryParam {
+  IVFQueryParam();
+  IVFQueryParam(const IVFQueryParam &);
+  IVFQueryParam(IVFQueryParam &&) noexcept;
+  IVFQueryParam &operator=(const IVFQueryParam &);
+  IVFQueryParam &operator=(IVFQueryParam &&) noexcept;
+  ~IVFQueryParam() override;
+
   int nprobe = 10;
   std::shared_ptr<BaseIndexQueryParam> l1QueryParam = nullptr;
   std::shared_ptr<BaseIndexQueryParam> l2QueryParam = nullptr;
 
   using Pointer = std::shared_ptr<IVFQueryParam>;
 
-  BaseIndexQueryParam::Pointer Clone() const override {
-    auto cloned_this = std::make_shared<IVFQueryParam>(*this);
-    cloned_this->l1QueryParam = l1QueryParam ? l1QueryParam->Clone() : nullptr;
-    cloned_this->l2QueryParam = l2QueryParam ? l2QueryParam->Clone() : nullptr;
-    return cloned_this;
-  }
+  BaseIndexQueryParam::Pointer Clone() const override;
 };
 
 struct ZVEC_CORE_API DiskAnnQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<DiskAnnQueryParam>;
 
+  DiskAnnQueryParam();
+  DiskAnnQueryParam(const DiskAnnQueryParam &);
+  DiskAnnQueryParam(DiskAnnQueryParam &&) noexcept;
+  DiskAnnQueryParam &operator=(const DiskAnnQueryParam &);
+  DiskAnnQueryParam &operator=(DiskAnnQueryParam &&) noexcept;
+  ~DiskAnnQueryParam() override;
+
   // Beam-search candidate list size used at query time. Larger values improve
   // recall at the cost of latency.
   uint32_t list_size = kDefaultDiskAnnListSize;
 
-  BaseIndexQueryParam::Pointer Clone() const override {
-    return std::make_shared<DiskAnnQueryParam>(*this);
-  }
+  BaseIndexQueryParam::Pointer Clone() const override;
 };
 
 // --- Construction Parameters ---

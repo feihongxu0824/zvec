@@ -116,10 +116,7 @@ class ZVEC_CORE_API Index {
 
   // // TODO: use holder
   // virtual int Build() = 0;
-  virtual int Train() {
-    is_trained_ = true;
-    return 0;
-  }
+  virtual int Train();
 
   // virtual int Dump(const std::string &file_path) = 0;
   virtual int Merge(const std::vector<Index::Pointer> &indexes,
@@ -142,34 +139,17 @@ class ZVEC_CORE_API Index {
                                const core::VectorSource &src,
                                SearchResult *result);
 
-  virtual BaseIndexParam::Pointer GetParam() const {
-    return std::make_shared<BaseIndexParam>(param_);
-  }
+  virtual BaseIndexParam::Pointer GetParam() const;
 
-  virtual bool IsTrained() const {
-    return is_trained_;
-  }
+  virtual bool IsTrained() const;
 
   bool IsDirty() const;
 
-  uint32_t GetDocCount() const {
-    if (streamer_ == nullptr) {
-      return -1;
-    }
-    if (is_sparse_) {
-      return streamer_->create_sparse_provider()->count();
-    } else {
-      return streamer_->create_provider()->count();
-    }
-  }
+  uint32_t GetDocCount() const;
 
-  core::IndexStreamer::Pointer index_searcher() {
-    return streamer_;
-  }
+  core::IndexStreamer::Pointer index_searcher();
 
-  core::IndexProvider::Pointer create_index_provider() const {
-    return streamer_->create_provider();
-  }
+  core::IndexProvider::Pointer create_index_provider() const;
 
   static std::string get_metric_name(MetricType metric_type, bool is_sparse);
 
@@ -212,9 +192,7 @@ class ZVEC_CORE_API Index {
  protected:
   bool init_context();
   core::IndexContext::Pointer &acquire_context();
-  void release_context() {
-    // context_list_[get_context_index()]->reset();
-  }
+  void release_context();
 
  protected:
   bool is_trained_{false};
