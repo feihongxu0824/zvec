@@ -32,11 +32,12 @@
 #include <zvec/core/framework/index_storage.h>
 #include <zvec/core/interface/index_param.h>
 #include <zvec/core/interface/vector_source.h>
+#include <zvec/export.h>
 #include "zvec/core/framework/index_provider.h"
 
 namespace zvec::core_interface {
 
-class IndexFactory;
+class ZVEC_CORE_API IndexFactory;
 
 struct DenseVector {
   const void *data;
@@ -100,7 +101,7 @@ struct SearchResult {
   std::vector<std::string> reverted_sparse_values_list_{};
 };
 
-class Index {
+class ZVEC_CORE_API Index {
  public:
   typedef std::shared_ptr<Index> Pointer;
   virtual ~Index() = default;
@@ -240,7 +241,7 @@ class Index {
 };
 
 
-class FlatIndex : public Index {
+class ZVEC_CORE_API FlatIndex : public Index {
  public:
   FlatIndex() = default;
   // FlatIndex(const FlatIndexParam &param) : param_(param) {}
@@ -258,7 +259,7 @@ class FlatIndex : public Index {
   FlatIndexParam param_{};
 };
 
-class IVFIndex : public Index {
+class ZVEC_CORE_API IVFIndex : public Index {
  public:
   IVFIndex() = default;
 
@@ -291,7 +292,7 @@ class IVFIndex : public Index {
 };
 
 
-class HNSWIndex : public Index {
+class ZVEC_CORE_API HNSWIndex : public Index {
  public:
   HNSWIndex() = default;
 
@@ -322,7 +323,7 @@ class HNSWIndex : public Index {
   HNSWIndexParam param_{};
 };
 
-class VamanaIndex : public Index {
+class ZVEC_CORE_API VamanaIndex : public Index {
  public:
   VamanaIndex() = default;
 
@@ -339,7 +340,7 @@ class VamanaIndex : public Index {
   VamanaIndexParam param_{};
 };
 
-class HNSWRabitqIndex : public Index {
+class ZVEC_CORE_API HNSWRabitqIndex : public Index {
  public:
   HNSWRabitqIndex() = default;
 
@@ -356,7 +357,7 @@ class HNSWRabitqIndex : public Index {
   HNSWRabitqIndexParam param_{};
 };
 
-class DiskAnnIndex : public Index {
+class ZVEC_CORE_API DiskAnnIndex : public Index {
  public:
   DiskAnnIndex() = default;
 

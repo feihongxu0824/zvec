@@ -43,7 +43,7 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES
         OUTPUT_NAME "${OUTPUT_NAME}"
         POSITION_INDEPENDENT_CODE ON
-        WINDOWS_EXPORT_ALL_SYMBOLS ON
+        WINDOWS_EXPORT_ALL_SYMBOLS OFF
     )
     if(WIN32)
         set_target_properties(${TARGET_NAME} PROPERTIES
@@ -122,6 +122,23 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
             ${PROJECT_SOURCE_DIR}/src
     )
 
+    set(ZVEC_ALLIN_USE_DEFS)
+    foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
+        if(ZVEC_ALLIN_LIB STREQUAL zvec)
+            list(APPEND ZVEC_ALLIN_USE_DEFS ZVEC_DB_USE_SHARED)
+        elseif(ZVEC_ALLIN_LIB STREQUAL zvec_core)
+            list(APPEND ZVEC_ALLIN_USE_DEFS ZVEC_CORE_USE_SHARED)
+        elseif(ZVEC_ALLIN_LIB STREQUAL zvec_ailego)
+            list(APPEND ZVEC_ALLIN_USE_DEFS ZVEC_AILEGO_USE_SHARED)
+        elseif(ZVEC_ALLIN_LIB STREQUAL zvec_turbo)
+            list(APPEND ZVEC_ALLIN_USE_DEFS ZVEC_TURBO_USE_SHARED)
+        endif()
+    endforeach()
+    if(ZVEC_ALLIN_USE_DEFS)
+        list(REMOVE_DUPLICATES ZVEC_ALLIN_USE_DEFS)
+        target_compile_definitions(${TARGET_NAME} INTERFACE ${ZVEC_ALLIN_USE_DEFS})
+    endif()
+
     # Strip symbols in release builds to reduce library size.
     if(NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
         if(UNIX AND NOT APPLE)
@@ -143,6 +160,29 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endfunction()
+
+function(zvec_enable_cxx_exports TARGET_NAME)
+    if(NOT TARGET ${TARGET_NAME})
+        return()
+    endif()
+
+    foreach(ZVEC_EXPORT_DEF IN LISTS ARGN)
+        target_compile_definitions(${TARGET_NAME} PRIVATE ${ZVEC_EXPORT_DEF})
+    endforeach()
+endfunction()
+
+if(WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED)
+    if(BUILD_ZVEC_SHARED)
+        zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
+    endif()
+    if(BUILD_ZVEC_SHARED OR BUILD_ZVEC_CORE_SHARED)
+        zvec_enable_cxx_exports(zvec_core ZVEC_CORE_BUILD_SHARED)
+        zvec_enable_cxx_exports(zvec_turbo ZVEC_TURBO_BUILD_SHARED)
+    endif()
+    if(BUILD_ZVEC_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_AILEGO_SHARED)
+        zvec_enable_cxx_exports(zvec_ailego ZVEC_AILEGO_BUILD_SHARED)
+    endif()
+endif()
 
 if(BUILD_ZVEC_AILEGO_SHARED)
     zvec_add_all_in_one_shared(zvec_ailego_shared zvec_ailego

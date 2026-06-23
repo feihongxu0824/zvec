@@ -79,16 +79,34 @@ zvec_require_shared_library(ZVEC_CORE_SHARED_LIBRARY zvec_core)
 # libraries need to be specified by the consumer.
 add_library(zvec-lib INTERFACE)
 target_link_libraries(zvec-lib INTERFACE "${ZVEC_SHARED_LIBRARY}")
+if(WIN32)
+    target_compile_definitions(zvec-lib INTERFACE
+        ZVEC_DB_USE_SHARED
+        ZVEC_CORE_USE_SHARED
+        ZVEC_AILEGO_USE_SHARED
+        ZVEC_TURBO_USE_SHARED
+    )
+endif()
 
 # --- Create INTERFACE target for libzvec_ailego (ailego-only all-in-one library) ---
 # The ailego example intentionally depends only on libzvec_ailego.
 add_library(zvec-ailego-lib INTERFACE)
 target_link_libraries(zvec-ailego-lib INTERFACE "${ZVEC_AILEGO_SHARED_LIBRARY}")
+if(WIN32)
+    target_compile_definitions(zvec-ailego-lib INTERFACE ZVEC_AILEGO_USE_SHARED)
+endif()
 
 # --- Create INTERFACE target for libzvec_core (core-only all-in-one library) ---
 # The core example intentionally depends only on libzvec_core.
 add_library(zvec-core-lib INTERFACE)
 target_link_libraries(zvec-core-lib INTERFACE "${ZVEC_CORE_SHARED_LIBRARY}")
+if(WIN32)
+    target_compile_definitions(zvec-core-lib INTERFACE
+        ZVEC_CORE_USE_SHARED
+        ZVEC_AILEGO_USE_SHARED
+        ZVEC_TURBO_USE_SHARED
+    )
+endif()
 
 # --- Executables ---
 set(ZVEC_EXAMPLE_TARGETS)

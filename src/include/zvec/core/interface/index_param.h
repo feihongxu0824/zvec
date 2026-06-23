@@ -23,6 +23,7 @@
 #include <zvec/core/framework/index_filter.h>
 #include <zvec/core/framework/index_meta.h>
 #include <zvec/core/interface/constants.h>
+#include <zvec/export.h>
 #include "zvec/core/framework/index_framework.h"
 
 namespace zvec::core_interface {
@@ -30,10 +31,10 @@ namespace zvec::core_interface {
 // #define MAX_EF_CONSTRUCTION 65536
 // #define MAX_EF_SEARCH 100
 
-class IndexFactory;
-class Index;
-class BaseIndexParam;
-class BaseIndexQueryParam;
+class ZVEC_CORE_API IndexFactory;
+class ZVEC_CORE_API Index;
+class ZVEC_CORE_API BaseIndexParam;
+class ZVEC_CORE_API BaseIndexQueryParam;
 
 struct StorageOptions {
   enum class StorageType { kNone, kMMAP, kMemory, kBufferPool };
@@ -95,7 +96,7 @@ enum class QuantizerType {
   kUniformInt8,  // Global uniform int8 quantization (shared scale/bias).
 };
 
-struct SerializableBase {
+struct ZVEC_CORE_API SerializableBase {
   std::string SerializeToJson(bool omit_empty_value = false) const {
     return zvec::ailego::JsonValue(SerializeToJsonObject(omit_empty_value))
         .as_json_string()
@@ -118,7 +119,7 @@ struct SerializableBase {
 };
 
 // TODO: maybe a base class for quantizer?
-struct QuantizerParam : public SerializableBase {
+struct ZVEC_CORE_API QuantizerParam : public SerializableBase {
   QuantizerType type = QuantizerType::kNone;
   int num_subquantizers = 8;  // M
   int num_bits = 8;           // bits per subquantizer
@@ -162,7 +163,7 @@ struct RefinerParam {
 };
 
 // --- Query Parameters (can be passed to search methods) ---
-class BaseIndexQueryParam {
+class ZVEC_CORE_API BaseIndexQueryParam {
  public:
   using Pointer = std::shared_ptr<BaseIndexQueryParam>;
 
@@ -179,7 +180,7 @@ class BaseIndexQueryParam {
   virtual Pointer Clone() const = 0;
 };
 
-struct FlatQueryParam : public BaseIndexQueryParam {
+struct ZVEC_CORE_API FlatQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<FlatQueryParam>;
 
   BaseIndexQueryParam::Pointer Clone() const override {
@@ -187,7 +188,7 @@ struct FlatQueryParam : public BaseIndexQueryParam {
   }
 };
 
-struct HNSWQueryParam : public BaseIndexQueryParam {
+struct ZVEC_CORE_API HNSWQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<HNSWQueryParam>;
 
   uint32_t ef_search = kDefaultHnswEfSearch;
@@ -199,7 +200,7 @@ struct HNSWQueryParam : public BaseIndexQueryParam {
   }
 };
 
-struct HNSWRabitqQueryParam : public BaseIndexQueryParam {
+struct ZVEC_CORE_API HNSWRabitqQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<HNSWRabitqQueryParam>;
 
   uint32_t ef_search = kDefaultHnswEfSearch;
@@ -209,7 +210,7 @@ struct HNSWRabitqQueryParam : public BaseIndexQueryParam {
   }
 };
 
-struct IVFQueryParam : public BaseIndexQueryParam {
+struct ZVEC_CORE_API IVFQueryParam : public BaseIndexQueryParam {
   int nprobe = 10;
   std::shared_ptr<BaseIndexQueryParam> l1QueryParam = nullptr;
   std::shared_ptr<BaseIndexQueryParam> l2QueryParam = nullptr;
@@ -224,7 +225,7 @@ struct IVFQueryParam : public BaseIndexQueryParam {
   }
 };
 
-struct DiskAnnQueryParam : public BaseIndexQueryParam {
+struct ZVEC_CORE_API DiskAnnQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<DiskAnnQueryParam>;
 
   // Beam-search candidate list size used at query time. Larger values improve
@@ -238,7 +239,7 @@ struct DiskAnnQueryParam : public BaseIndexQueryParam {
 
 // --- Construction Parameters ---
 // template<typename IndexQueryParamType>
-class BaseIndexParam : public SerializableBase {
+class ZVEC_CORE_API BaseIndexParam : public SerializableBase {
  public:
   using Pointer = std::shared_ptr<BaseIndexParam>;
 
@@ -279,7 +280,7 @@ class BaseIndexParam : public SerializableBase {
       bool omit_empty_value = false) const override;
 };
 
-struct FlatIndexParam : public BaseIndexParam {
+struct ZVEC_CORE_API FlatIndexParam : public BaseIndexParam {
   using Pointer = std::shared_ptr<FlatIndexParam>;
   FlatIndexParam() : BaseIndexParam(IndexType::kFlat) {}
 
@@ -291,7 +292,7 @@ struct FlatIndexParam : public BaseIndexParam {
       bool omit_empty_value = false) const override;
 };
 
-struct IVFIndexParam : public BaseIndexParam {
+struct ZVEC_CORE_API IVFIndexParam : public BaseIndexParam {
   using Pointer = std::shared_ptr<IVFIndexParam>;
   int nlist = 1024;
   int niters = 10;
@@ -327,7 +328,7 @@ struct IVFIndexParam : public BaseIndexParam {
   // IVFIndexParam.quantization === l2Index's quantization
 };
 
-struct HNSWIndexParam : public BaseIndexParam {
+struct ZVEC_CORE_API HNSWIndexParam : public BaseIndexParam {
   using Pointer = std::shared_ptr<HNSWIndexParam>;
   int m = kDefaultHnswNeighborCnt;
   int ef_construction = kDefaultHnswEfConstruction;
@@ -352,7 +353,7 @@ struct HNSWIndexParam : public BaseIndexParam {
       bool omit_empty_value = false) const override;
 };
 
-struct VamanaIndexParam : public BaseIndexParam {
+struct ZVEC_CORE_API VamanaIndexParam : public BaseIndexParam {
   using Pointer = std::shared_ptr<VamanaIndexParam>;
   int max_degree = kDefaultVamanaMaxDegree;
   int search_list_size = kDefaultVamanaSearchListSize;
@@ -382,7 +383,7 @@ struct VamanaIndexParam : public BaseIndexParam {
       bool omit_empty_value = false) const override;
 };
 
-struct VamanaQueryParam : public BaseIndexQueryParam {
+struct ZVEC_CORE_API VamanaQueryParam : public BaseIndexQueryParam {
   using Pointer = std::shared_ptr<VamanaQueryParam>;
 
   uint32_t ef_search = kDefaultVamanaEfSearch;
@@ -394,7 +395,7 @@ struct VamanaQueryParam : public BaseIndexQueryParam {
   }
 };
 
-struct HNSWRabitqIndexParam : public BaseIndexParam {
+struct ZVEC_CORE_API HNSWRabitqIndexParam : public BaseIndexParam {
   using Pointer = std::shared_ptr<HNSWRabitqIndexParam>;
 
   // HNSW parameters
@@ -427,7 +428,7 @@ struct HNSWRabitqIndexParam : public BaseIndexParam {
       bool omit_empty_value = false) const override;
 };
 
-struct DiskAnnIndexParam : public BaseIndexParam {
+struct ZVEC_CORE_API DiskAnnIndexParam : public BaseIndexParam {
   using Pointer = std::shared_ptr<DiskAnnIndexParam>;
 
   int max_degree = kDefaultDiskAnnMaxDegree;

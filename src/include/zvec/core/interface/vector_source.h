@@ -15,11 +15,12 @@
 #pragma once
 
 #include <cstdint>
+#include <zvec/export.h>
 
 namespace zvec {
 namespace core {
 
-class VectorSource {
+class ZVEC_CORE_API VectorSource {
  public:
   virtual ~VectorSource() = default;
 
