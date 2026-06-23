@@ -21,7 +21,7 @@ include(GNUInstallDirs)
 find_package(Threads REQUIRED)
 
 function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
-    cmake_parse_arguments(ZVEC_ALLIN "" "" "LIBS" ${ARGN})
+    cmake_parse_arguments(ZVEC_ALLIN "EXPLICIT_EXPORTS" "" "LIBS" ${ARGN})
     if(NOT ZVEC_ALLIN_LIBS)
         message(FATAL_ERROR "zvec_add_all_in_one_shared requires LIBS")
     endif()
@@ -43,8 +43,12 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     set_target_properties(${TARGET_NAME} PROPERTIES
         OUTPUT_NAME "${OUTPUT_NAME}"
         POSITION_INDEPENDENT_CODE ON
-        WINDOWS_EXPORT_ALL_SYMBOLS OFF
     )
+    if(WIN32 AND ZVEC_ALLIN_EXPLICIT_EXPORTS)
+        set_target_properties(${TARGET_NAME} PROPERTIES
+            WINDOWS_EXPORT_ALL_SYMBOLS OFF
+        )
+    endif()
     if(WIN32)
         set_target_properties(${TARGET_NAME} PROPERTIES
             ARCHIVE_OUTPUT_NAME "${TARGET_NAME}"
@@ -171,7 +175,11 @@ function(zvec_enable_cxx_exports TARGET_NAME)
     endforeach()
 endfunction()
 
-if(WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED)
+if(MSVC)
+    if(BUILD_ZVEC_SHARED)
+        zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
+    endif()
+elseif(WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED)
     if(BUILD_ZVEC_SHARED)
         zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
     endif()
@@ -202,6 +210,7 @@ endif()
 
 if(BUILD_ZVEC_SHARED)
     zvec_add_all_in_one_shared(zvec_shared zvec
+        EXPLICIT_EXPORTS
         LIBS
             zvec
             zvec_core

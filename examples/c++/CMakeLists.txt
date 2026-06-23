@@ -80,12 +80,7 @@ zvec_require_shared_library(ZVEC_CORE_SHARED_LIBRARY zvec_core)
 add_library(zvec-lib INTERFACE)
 target_link_libraries(zvec-lib INTERFACE "${ZVEC_SHARED_LIBRARY}")
 if(WIN32)
-    target_compile_definitions(zvec-lib INTERFACE
-        ZVEC_DB_USE_SHARED
-        ZVEC_CORE_USE_SHARED
-        ZVEC_AILEGO_USE_SHARED
-        ZVEC_TURBO_USE_SHARED
-    )
+    target_compile_definitions(zvec-lib INTERFACE ZVEC_DB_USE_SHARED)
 endif()
 
 # --- Create INTERFACE target for libzvec_ailego (ailego-only all-in-one library) ---
