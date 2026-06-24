@@ -179,18 +179,8 @@ function(zvec_enable_cxx_exports TARGET_NAME)
 endfunction()
 
 if(MSVC)
-    # zvec_shared turns off CMake's auto-export on Windows. The DB public
-    # headers still expose selected core/ailego/turbo types, so the bundled
-    # component objects must export their explicitly annotated public ABI too.
     if(BUILD_ZVEC_SHARED)
         zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
-    endif()
-    if(BUILD_ZVEC_SHARED OR BUILD_ZVEC_CORE_SHARED)
-        zvec_enable_cxx_exports(zvec_core ZVEC_CORE_BUILD_SHARED)
-        zvec_enable_cxx_exports(zvec_turbo ZVEC_TURBO_BUILD_SHARED)
-    endif()
-    if(BUILD_ZVEC_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_AILEGO_SHARED)
-        zvec_enable_cxx_exports(zvec_ailego ZVEC_AILEGO_BUILD_SHARED)
     endif()
 elseif(WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED)
     if(BUILD_ZVEC_SHARED)
