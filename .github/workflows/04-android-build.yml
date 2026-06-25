@@ -155,8 +155,7 @@ jobs:
         shell: bash
         run: |
           AVD_NAME="zvec_test_avd"
-          AVD_DIR="$HOME/.android/avd/${AVD_NAME}.avd"
-          AVD_INI="$HOME/.android/avd/${AVD_NAME}.ini"
+          EMULATOR_LOG="$RUNNER_TEMP/emulator-api-${{ matrix.api }}.log"
 
           # Find installed system image (same priority as build_android.sh)
           SYS_IMG=""
@@ -178,50 +177,44 @@ jobs:
 
           # Extract tag from path (e.g. .../google_apis/x86_64 -> google_apis)
           SYS_TAG=$(basename "$(dirname "$SYS_IMG")")
+          SYS_PACKAGE="system-images;android-${{ matrix.api }};${SYS_TAG};x86_64"
 
-          # Create AVD via INI files (faster and more reliable than avdmanager)
-          mkdir -p "$AVD_DIR"
-
-          cat > "$AVD_INI" << EOAVD
-          avd.ini.encoding=UTF-8
-          path=${AVD_DIR}
-          path.rel=avd/${AVD_NAME}.avd
-          target=android-${{ matrix.api }}
-          EOAVD
-
-          cat > "$AVD_DIR/config.ini" << EOCFG
-          AvdId=${AVD_NAME}
-          PlayStore.enabled=false
-          abi.type=x86_64
-          avd.ini.displayname=${AVD_NAME}
-          avd.ini.encoding=UTF-8
-          disk.dataPartition.size=8G
-          hw.accelerator.isConfigured=true
-          hw.cpu.arch=x86_64
-          hw.cpu.ncore=4
-          hw.lcd.density=420
-          hw.lcd.height=1920
-          hw.lcd.width=1080
-          hw.ramSize=4096
-          image.sysdir.1=${SYS_IMG}/
-          tag.display=${SYS_TAG}
-          tag.id=${SYS_TAG}
-          EOCFG
+          echo "Creating AVD from package: $SYS_PACKAGE"
+          echo "no" | avdmanager create avd \
+            --force \
+            --name "$AVD_NAME" \
+            --package "$SYS_PACKAGE" \
+            --abi x86_64 \
+            --tag "$SYS_TAG"
 
           echo "Created AVD: $AVD_NAME"
+
+          dump_emulator_diagnostics() {
+            echo "adb devices:"
+            adb devices -l || true
+            echo "emulator processes:"
+            ps -ef | grep -i '[e]mulator' || true
+            echo "emulator log tail:"
+            tail -200 "$EMULATOR_LOG" || true
+          }
 
           # Launch emulator in background
           $ANDROID_HOME/emulator/emulator -avd "$AVD_NAME" \
             -no-window -no-audio -no-boot-anim \
             -gpu swiftshader_indirect \
             -netdelay none -netspeed full \
-            -memory 4096 \
+            -memory 2048 \
             -no-snapshot \
-            -wipe-data &
+            -wipe-data \
+            > "$EMULATOR_LOG" 2>&1 &
           echo "EMULATOR_PID=$!" >> "$GITHUB_ENV"
 
           # Wait for device to be reachable
-          adb wait-for-device
+          if ! timeout 180 adb wait-for-device; then
+            echo "ERROR: Emulator did not become reachable within 180s"
+            dump_emulator_diagnostics
+            exit 1
+          fi
 
           # Poll for boot completion with timeout
           echo "Waiting for boot to complete..."
@@ -235,6 +228,7 @@ jobs:
             fi
             if [ $ELAPSED -ge $TIMEOUT ]; then
               echo "ERROR: Emulator failed to boot within ${TIMEOUT}s"
+              dump_emulator_diagnostics
               exit 1
             fi
             sleep 3
