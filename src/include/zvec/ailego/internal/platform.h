@@ -255,7 +255,10 @@ static inline int ailego_clz64(uint64_t x) {
   _aligned_malloc((size_t)(SIZE), (ALIGN))
 #define ailego_aligned_free _aligned_free
 #else  // !_MSC_VER
-#if defined(_ISOC11_SOURCE)
+#if defined(__ANDROID__)
+#define ailego_aligned_malloc(SIZE, ALIGN) \
+  ailego_posix_malloc((size_t)(SIZE), (ALIGN))
+#elif defined(_ISOC11_SOURCE)
 #define ailego_aligned_malloc(SIZE, ALIGN) \
   aligned_alloc((ALIGN), (size_t)(SIZE))
 #else  // !_ISOC11_SOURCE

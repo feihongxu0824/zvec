@@ -15,6 +15,7 @@
 #include "memory_helper.h"
 #include <cassert>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <fstream>
 #include <zvec/ailego/utility/file_helper.h>
@@ -461,6 +462,11 @@ void *MemoryHelper::AllocateAligned(size_t size, size_t alignment,
   const size_t aligned_size = (size + alignment - 1) / alignment * alignment;
 #if defined(_WIN64) || defined(_WIN32)
   void *ptr = ::_aligned_malloc(aligned_size, alignment);
+#elif defined(__ANDROID__)
+  void *ptr = nullptr;
+  if (::posix_memalign(&ptr, alignment, aligned_size) != 0) {
+    ptr = nullptr;
+  }
 #else
   void *ptr = std::aligned_alloc(alignment, aligned_size);
 #endif

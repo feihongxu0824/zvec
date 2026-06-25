@@ -55,6 +55,13 @@ inline auto make_aligned_uint32_array(size_t count) {
   auto *ptr = static_cast<uint32_t *>(_aligned_malloc(num_bytes, 16));
   return std::unique_ptr<uint32_t[], decltype(&_aligned_free)>(ptr,
                                                                _aligned_free);
+#elif defined(__ANDROID__)
+  void *raw_ptr = nullptr;
+  if (::posix_memalign(&raw_ptr, 16, num_bytes) != 0) {
+    raw_ptr = nullptr;
+  }
+  auto *ptr = static_cast<uint32_t *>(raw_ptr);
+  return std::unique_ptr<uint32_t[], decltype(&std::free)>(ptr, std::free);
 #else
   auto *ptr = static_cast<uint32_t *>(std::aligned_alloc(16, num_bytes));
   return std::unique_ptr<uint32_t[], decltype(&std::free)>(ptr, std::free);

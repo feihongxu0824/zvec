@@ -25,7 +25,9 @@
 #include <windows.h>
 #else
 #include <sys/time.h>
+#ifndef __ANDROID__
 #include <glob.h>
+#endif
 #include <unistd.h>
 #endif
 
@@ -5931,6 +5933,8 @@ int main(void) {
 #ifdef _WIN32
   system("rmdir /s /q %TEMP%\\zvec_test_* 2>nul");
   system("del /q %TEMP%\\zvec_test_* 2>nul");
+#elif defined(__ANDROID__)
+  system("rm -rf ./zvec_test_* /data/local/tmp/zvec_test_*");
 #else
   {
     glob_t gl;
