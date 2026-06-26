@@ -161,6 +161,7 @@ jobs:
           EMULATOR_LOG="$RUNNER_TEMP/emulator-api-${{ matrix.api }}.log"
           export ANDROID_AVD_HOME="$AVD_HOME"
           echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
+          echo "EMULATOR_LOG=$EMULATOR_LOG" >> "$GITHUB_ENV"
 
           # Find installed system image (same priority as build_android.sh)
           SYS_IMG=""
@@ -203,11 +204,11 @@ jobs:
           disk.dataPartition.size=8G
           hw.accelerator.isConfigured=true
           hw.cpu.arch=x86_64
-          hw.cpu.ncore=2
+          hw.cpu.ncore=4
           hw.lcd.density=420
           hw.lcd.height=1920
           hw.lcd.width=1080
-          hw.ramSize=2048
+          hw.ramSize=4096
           image.sysdir.1=${SYS_IMG}/
           tag.display=${SYS_TAG}
           tag.id=${SYS_TAG}
@@ -237,7 +238,7 @@ jobs:
             -no-window -no-audio -no-boot-anim \
             -gpu swiftshader_indirect \
             -netdelay none -netspeed full \
-            -memory 2048 \
+            -memory 4096 \
             -no-snapshot \
             -wipe-data \
             > "$EMULATOR_LOG" 2>&1 &
@@ -331,6 +332,7 @@ jobs:
           PASSED=0
           FAILED=0
           FAILED_NAMES=()
+          DEVICE_LOST=0
           IDX=0
 
           echo "Running $TOTAL unit tests on emulator..."
@@ -368,6 +370,20 @@ jobs:
 
             # Print test output (without the EXIT_CODE marker)
             echo "$OUTPUT" | grep -v 'EXIT_CODE=' | sed 's/^/  /' || true
+
+            if [ -z "$EXIT_CODE" ] && echo "$OUTPUT" | grep -Eqi 'device offline|no devices/emulators found|device .* not found'; then
+              echo "  >>> FAILED (device lost while running $test_name)"
+              echo "adb devices:"
+              adb devices -l || true
+              echo "emulator processes:"
+              ps -ef | grep -i '[e]mulator' || true
+              echo "emulator log tail:"
+              tail -200 "$EMULATOR_LOG" || true
+              FAILED=$((FAILED + 1))
+              FAILED_NAMES+=("$test_name")
+              DEVICE_LOST=1
+              break
+            fi
 
             if [ "$EXIT_CODE" = "0" ]; then
               echo "  >>> PASSED"
@@ -409,6 +425,9 @@ jobs:
           echo "============================================================"
 
           if [ $FAILED -gt 0 ]; then
+            exit 1
+          fi
+          if [ $DEVICE_LOST -gt 0 ]; then
             exit 1
           fi
           echo "All tests passed!"
