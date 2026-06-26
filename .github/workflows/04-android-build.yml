@@ -155,7 +155,12 @@ jobs:
         shell: bash
         run: |
           AVD_NAME="zvec_test_avd"
+          AVD_HOME="$HOME/.android/avd"
+          AVD_DIR="$AVD_HOME/${AVD_NAME}.avd"
+          AVD_INI="$AVD_HOME/${AVD_NAME}.ini"
           EMULATOR_LOG="$RUNNER_TEMP/emulator-api-${{ matrix.api }}.log"
+          export ANDROID_AVD_HOME="$AVD_HOME"
+          echo "ANDROID_AVD_HOME=$ANDROID_AVD_HOME" >> "$GITHUB_ENV"
 
           # Find installed system image (same priority as build_android.sh)
           SYS_IMG=""
@@ -177,19 +182,48 @@ jobs:
 
           # Extract tag from path (e.g. .../google_apis/x86_64 -> google_apis)
           SYS_TAG=$(basename "$(dirname "$SYS_IMG")")
-          SYS_PACKAGE="system-images;android-${{ matrix.api }};${SYS_TAG};x86_64"
 
-          echo "Creating AVD from package: $SYS_PACKAGE"
-          echo "no" | avdmanager create avd \
-            --force \
-            --name "$AVD_NAME" \
-            --package "$SYS_PACKAGE" \
-            --abi x86_64 \
-            --tag "$SYS_TAG"
+          # Create AVD files directly so emulator and adb use the same AVD home.
+          rm -rf "$AVD_DIR" "$AVD_INI"
+          mkdir -p "$AVD_DIR"
+
+          cat > "$AVD_INI" << EOAVD
+          avd.ini.encoding=UTF-8
+          path=${AVD_DIR}
+          path.rel=avd/${AVD_NAME}.avd
+          target=android-${{ matrix.api }}
+          EOAVD
+
+          cat > "$AVD_DIR/config.ini" << EOCFG
+          AvdId=${AVD_NAME}
+          PlayStore.enabled=false
+          abi.type=x86_64
+          avd.ini.displayname=${AVD_NAME}
+          avd.ini.encoding=UTF-8
+          disk.dataPartition.size=8G
+          hw.accelerator.isConfigured=true
+          hw.cpu.arch=x86_64
+          hw.cpu.ncore=2
+          hw.lcd.density=420
+          hw.lcd.height=1920
+          hw.lcd.width=1080
+          hw.ramSize=2048
+          image.sysdir.1=${SYS_IMG}/
+          tag.display=${SYS_TAG}
+          tag.id=${SYS_TAG}
+          EOCFG
 
           echo "Created AVD: $AVD_NAME"
+          echo "Available AVDs:"
+          $ANDROID_HOME/emulator/emulator -list-avds
 
           dump_emulator_diagnostics() {
+            echo "AVD home:"
+            ls -la "$AVD_HOME" || true
+            echo "AVD ini:"
+            cat "$AVD_INI" || true
+            echo "AVD config:"
+            cat "$AVD_DIR/config.ini" || true
             echo "adb devices:"
             adb devices -l || true
             echo "emulator processes:"
