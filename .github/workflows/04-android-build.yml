@@ -16,7 +16,7 @@ permissions:
 jobs:
   emulator-smoke:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 12
     steps:
       - name: Setup Java 17
         uses: actions/setup-java@v5
@@ -133,31 +133,33 @@ jobs:
           EMULATOR_PID=$!
           trap 'adb emu kill 2>/dev/null || true; kill "$EMULATOR_PID" 2>/dev/null || true' EXIT
 
-          if ! timeout 180 adb wait-for-device; then
-            echo "ERROR: Emulator did not become reachable within 180s"
+          if ! timeout 90 adb wait-for-device; then
+            echo "ERROR: Emulator did not become reachable within 90s"
             dump_emulator_diagnostics
             exit 1
           fi
 
           echo "Waiting for sys.boot_completed..."
-          elapsed=0
-          while true; do
-            booted=$(timeout 15 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r\n ' || true)
+          start_seconds=$SECONDS
+          deadline=$((start_seconds + 180))
+          while [ "$SECONDS" -lt "$deadline" ]; do
+            booted=$(timeout 5 adb shell getprop sys.boot_completed 2>/dev/null | tr -d '\r\n ' || true)
+            elapsed=$((SECONDS - start_seconds))
             echo "boot_completed='${booted}' elapsed=${elapsed}s"
             if [ "$booted" = "1" ]; then
               break
             fi
-            if [ "$elapsed" -ge 300 ]; then
-              echo "ERROR: Emulator failed to boot within 300s"
-              dump_emulator_diagnostics
-              exit 1
-            fi
             sleep 5
-            elapsed=$((elapsed + 5))
           done
 
-          echo "Device ABI: $(timeout 15 adb shell getprop ro.product.cpu.abi | tr -d '\r' || true)"
-          echo "ABI list  : $(timeout 15 adb shell getprop ro.product.cpu.abilist | tr -d '\r' || true)"
-          echo "Android  : $(timeout 15 adb shell getprop ro.build.version.release | tr -d '\r' || true)"
-          echo "API      : $(timeout 15 adb shell getprop ro.build.version.sdk | tr -d '\r' || true)"
+          if [ "${booted:-}" != "1" ]; then
+            echo "ERROR: Emulator failed to boot within 180s"
+            dump_emulator_diagnostics
+            exit 1
+          fi
+
+          echo "Device ABI: $(timeout 5 adb shell getprop ro.product.cpu.abi | tr -d '\r' || true)"
+          echo "ABI list  : $(timeout 5 adb shell getprop ro.product.cpu.abilist | tr -d '\r' || true)"
+          echo "Android  : $(timeout 5 adb shell getprop ro.build.version.release | tr -d '\r' || true)"
+          echo "API      : $(timeout 5 adb shell getprop ro.build.version.sdk | tr -d '\r' || true)"
           echo "Emulator smoke test passed"
