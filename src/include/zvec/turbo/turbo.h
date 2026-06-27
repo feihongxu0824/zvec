@@ -15,6 +15,7 @@
 
 #include <functional>
 #include <zvec/ailego/math_batch/utils.h>
+#include <zvec/export.h>
 
 namespace zvec::turbo {
 
@@ -50,16 +51,15 @@ enum class QuantizeType {
   kUniform,
 };
 
-DistanceFunc get_distance_func(MetricType metric_type, DataType data_type,
-                               QuantizeType quantize_type);
-
-BatchDistanceFunc get_batch_distance_func(MetricType metric_type,
-                                          DataType data_type,
-                                          QuantizeType quantize_type);
-
-QueryPreprocessFunc get_query_preprocess_func(MetricType metric_type,
+ZVEC_TURBO_API DistanceFunc get_distance_func(MetricType metric_type,
                                               DataType data_type,
                                               QuantizeType quantize_type);
+
+ZVEC_TURBO_API BatchDistanceFunc get_batch_distance_func(
+    MetricType metric_type, DataType data_type, QuantizeType quantize_type);
+
+ZVEC_TURBO_API QueryPreprocessFunc get_query_preprocess_func(
+    MetricType metric_type, DataType data_type, QuantizeType quantize_type);
 
 // Returns the SIMD kernel for the uniform quantizer on the current CPU for
 // the given output data_type, or nullptr if no SIMD implementation is
@@ -67,6 +67,7 @@ QueryPreprocessFunc get_query_preprocess_func(MetricType metric_type,
 // uniform-specific accessor intentionally kept outside of the generic
 // (metric/data/quantize) dispatch above; data_type is retained so the
 // interface can grow to cover other output types (e.g. fp16) in the future.
-UniformQuantizeFunc get_uniform_quantize_func(DataType data_type);
+ZVEC_TURBO_API UniformQuantizeFunc
+get_uniform_quantize_func(DataType data_type);
 
 }  // namespace zvec::turbo
