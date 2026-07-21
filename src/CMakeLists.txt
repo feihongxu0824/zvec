@@ -129,7 +129,7 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     set(ZVEC_ALLIN_USE_DEFS)
     set(ZVEC_ALLIN_USE_LIBS ${ZVEC_ALLIN_LIBS})
     if(ZVEC_ALLIN_EXPLICIT_EXPORTS AND OUTPUT_NAME STREQUAL zvec)
-        set(ZVEC_ALLIN_USE_LIBS zvec zvec_ailego)
+        set(ZVEC_ALLIN_USE_LIBS zvec)
     endif()
     foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_USE_LIBS})
         if(ZVEC_ALLIN_LIB STREQUAL zvec)
@@ -179,24 +179,12 @@ function(zvec_enable_cxx_exports TARGET_NAME)
     endforeach()
 endfunction()
 
-if(WIN32 OR BUILD_ZVEC_AILEGO_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_SHARED)
-    if(BUILD_ZVEC_SHARED)
-        zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
-    endif()
-
-    if(BUILD_ZVEC_SHARED OR BUILD_ZVEC_CORE_SHARED OR BUILD_ZVEC_AILEGO_SHARED)
-        zvec_enable_cxx_exports(zvec_ailego ZVEC_AILEGO_BUILD_SHARED)
-    endif()
-
-    if(BUILD_ZVEC_CORE_SHARED)
-        zvec_enable_cxx_exports(zvec_core ZVEC_CORE_BUILD_SHARED)
-        zvec_enable_cxx_exports(zvec_turbo ZVEC_TURBO_BUILD_SHARED)
-    endif()
+if(BUILD_ZVEC_SHARED)
+    zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
 endif()
 
 if(BUILD_ZVEC_AILEGO_SHARED)
     zvec_add_all_in_one_shared(zvec_ailego_shared zvec_ailego
-        EXPLICIT_EXPORTS
         LIBS
             zvec_ailego
     )
@@ -204,7 +192,6 @@ endif()
 
 if(BUILD_ZVEC_CORE_SHARED)
     zvec_add_all_in_one_shared(zvec_core_shared zvec_core
-        EXPLICIT_EXPORTS
         LIBS
             zvec_core
             zvec_ailego
