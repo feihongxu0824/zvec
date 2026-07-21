@@ -18,6 +18,81 @@
 
 namespace zvec {
 namespace core_interface {
+
+BaseIndexQueryParam::BaseIndexQueryParam() = default;
+BaseIndexQueryParam::BaseIndexQueryParam(const BaseIndexQueryParam &) = default;
+BaseIndexQueryParam::BaseIndexQueryParam(BaseIndexQueryParam &&) noexcept =
+    default;
+BaseIndexQueryParam &BaseIndexQueryParam::operator=(
+    const BaseIndexQueryParam &) = default;
+BaseIndexQueryParam &BaseIndexQueryParam::operator=(
+    BaseIndexQueryParam &&) noexcept = default;
+BaseIndexQueryParam::~BaseIndexQueryParam() = default;
+
+FlatQueryParam::FlatQueryParam() = default;
+FlatQueryParam::FlatQueryParam(const FlatQueryParam &) = default;
+FlatQueryParam::FlatQueryParam(FlatQueryParam &&) noexcept = default;
+FlatQueryParam &FlatQueryParam::operator=(const FlatQueryParam &) = default;
+FlatQueryParam &FlatQueryParam::operator=(FlatQueryParam &&) noexcept = default;
+FlatQueryParam::~FlatQueryParam() = default;
+
+BaseIndexQueryParam::Pointer FlatQueryParam::Clone() const {
+  return std::make_shared<FlatQueryParam>(*this);
+}
+
+HNSWQueryParam::HNSWQueryParam() = default;
+HNSWQueryParam::HNSWQueryParam(const HNSWQueryParam &) = default;
+HNSWQueryParam::HNSWQueryParam(HNSWQueryParam &&) noexcept = default;
+HNSWQueryParam &HNSWQueryParam::operator=(const HNSWQueryParam &) = default;
+HNSWQueryParam &HNSWQueryParam::operator=(HNSWQueryParam &&) noexcept = default;
+HNSWQueryParam::~HNSWQueryParam() = default;
+
+BaseIndexQueryParam::Pointer HNSWQueryParam::Clone() const {
+  return std::make_shared<HNSWQueryParam>(*this);
+}
+
+HNSWRabitqQueryParam::HNSWRabitqQueryParam() = default;
+HNSWRabitqQueryParam::HNSWRabitqQueryParam(const HNSWRabitqQueryParam &) =
+    default;
+HNSWRabitqQueryParam::HNSWRabitqQueryParam(HNSWRabitqQueryParam &&) noexcept =
+    default;
+HNSWRabitqQueryParam &HNSWRabitqQueryParam::operator=(
+    const HNSWRabitqQueryParam &) = default;
+HNSWRabitqQueryParam &HNSWRabitqQueryParam::operator=(
+    HNSWRabitqQueryParam &&) noexcept = default;
+HNSWRabitqQueryParam::~HNSWRabitqQueryParam() = default;
+
+BaseIndexQueryParam::Pointer HNSWRabitqQueryParam::Clone() const {
+  return std::make_shared<HNSWRabitqQueryParam>(*this);
+}
+
+IVFQueryParam::IVFQueryParam() = default;
+IVFQueryParam::IVFQueryParam(const IVFQueryParam &) = default;
+IVFQueryParam::IVFQueryParam(IVFQueryParam &&) noexcept = default;
+IVFQueryParam &IVFQueryParam::operator=(const IVFQueryParam &) = default;
+IVFQueryParam &IVFQueryParam::operator=(IVFQueryParam &&) noexcept = default;
+IVFQueryParam::~IVFQueryParam() = default;
+
+BaseIndexQueryParam::Pointer IVFQueryParam::Clone() const {
+  auto cloned_this = std::make_shared<IVFQueryParam>(*this);
+  cloned_this->l1QueryParam = l1QueryParam ? l1QueryParam->Clone() : nullptr;
+  cloned_this->l2QueryParam = l2QueryParam ? l2QueryParam->Clone() : nullptr;
+  return cloned_this;
+}
+
+DiskAnnQueryParam::DiskAnnQueryParam() = default;
+DiskAnnQueryParam::DiskAnnQueryParam(const DiskAnnQueryParam &) = default;
+DiskAnnQueryParam::DiskAnnQueryParam(DiskAnnQueryParam &&) noexcept = default;
+DiskAnnQueryParam &DiskAnnQueryParam::operator=(const DiskAnnQueryParam &) =
+    default;
+DiskAnnQueryParam &DiskAnnQueryParam::operator=(DiskAnnQueryParam &&) noexcept =
+    default;
+DiskAnnQueryParam::~DiskAnnQueryParam() = default;
+
+BaseIndexQueryParam::Pointer DiskAnnQueryParam::Clone() const {
+  return std::make_shared<DiskAnnQueryParam>(*this);
+}
+
 ailego::JsonObject BaseIndexParam::SerializeToJsonObject(
     bool omit_empty_value) const {
   ailego::JsonObject json_obj;
