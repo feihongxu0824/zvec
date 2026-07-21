@@ -2133,9 +2133,10 @@ Status SegmentImpl::drop_scalar_index(const std::vector<std::string> &columns,
   auto s = invert_indexers_->create_snapshot(new_invert_index_path);
   CHECK_RETURN_STATUS(s);
 
+  // The snapshot copy is mutated below to remove dropped columns and seal.
   auto new_scalar_indexer = InvertedIndexer::CreateAndOpen(
       collection_schema_->name(), new_invert_index_path, false, invert_fields,
-      options_.read_only_);
+      false);
   if (!new_scalar_indexer) {
     LOG_ERROR("Failed to create scalar indexer");
     return Status::InternalError("Failed to create scalar indexer");
@@ -4036,7 +4037,8 @@ Status SegmentImpl::load_vector_index_blocks() {
         if (!segment_meta_->vector_indexed(column)) {
           new_field_params.set_index_params(MakeDefaultQuantVectorIndexParams(
               vector_index_params->metric_type(),
-              vector_index_params->quantize_type()));
+              vector_index_params->quantize_type(),
+              vector_index_params->quantizer_param()));
         }
       }
 
@@ -4115,6 +4117,17 @@ VectorColumnIndexer::Ptr SegmentImpl::create_vector_indexer(
 }
 
 Status SegmentImpl::init_memory_components() {
+  // Roll back any partially-created components on failure so a failed init
+  // leaves memory_store_ null (the caller's `if (!memory_store_)` retry guard
+  // depends on it) and never gets flushed on close.
+  bool committed = false;
+  AILEGO_DEFER([&]() {
+    if (!committed) {
+      memory_store_.reset();
+      memory_vector_indexers_.clear();
+      quant_memory_vector_indexers_.clear();
+    }
+  });
   // init memory block id
   auto &mem_block = segment_meta_->writing_forward_block().value();
 
@@ -4171,7 +4184,8 @@ Status SegmentImpl::init_memory_components() {
       block_id = allocate_block_id();
       FieldSchema normal_quant_field(*field);
       normal_quant_field.set_index_params(MakeDefaultQuantVectorIndexParams(
-          index_params->metric_type(), index_params->quantize_type()));
+          index_params->metric_type(), index_params->quantize_type(),
+          index_params->quantizer_param()));
       auto quant_vector_indexer = create_vector_indexer(
           field->name(), normal_quant_field, block_id, true);
 
@@ -4184,6 +4198,7 @@ Status SegmentImpl::init_memory_components() {
     }
   }
 
+  committed = true;
   return Status::OK();
 }
 
@@ -4209,8 +4224,6 @@ Status SegmentImpl::recover() {
               wal_file_path.c_str());
     return Status::OK();
   }
-  AILEGO_DEFER([&]() { recover_wal_file->close(); });
-
   std::array<uint64_t, static_cast<size_t>(Operator::DELETE) + 1>
       recovered_doc_count{};
   uint64_t total_recovered_doc_count{0};
@@ -4294,7 +4307,17 @@ Status SegmentImpl::recover() {
       (size_t)recovered_doc_count[3]   // DELETE
   );
 
-  return Status::OK();
+  if (recover_wal_file->close() != 0) {
+    return Status::InternalError("Failed to close recovered wal file: ",
+                                 wal_file_path);
+  }
+  recover_wal_file.reset();
+
+  // Keep the recovered WAL attached to the segment. Operations such as
+  // optimize() flush the writing segment before sealing it; without an open
+  // member WAL, flush() treats the recovered memory components as empty and
+  // returns without persisting them.
+  return open_wal_file();
 }
 
 Status SegmentImpl::open_wal_file() {

@@ -37,29 +37,56 @@ using UniformQuantizeFunc = void (*)(const float *in, size_t dim, float scale,
 enum class MetricType {
   kSquaredEuclidean,
   kCosine,
+  kInnerProduct,
   kMipsSquaredEuclidean,
   kUnknown,
 };
 
 enum class DataType {
+  kInt4,
   kInt8,
+  kFp16,
+  kFp32,
   kUnknown,
 };
 
 enum class QuantizeType {
   kDefault,
   kUniform,
+  kRecord,
+  kFp16,
+  kFp32,
+  kPQ,
+  kRabit
 };
 
-ZVEC_TURBO_API DistanceFunc get_distance_func(MetricType metric_type,
-                                              DataType data_type,
-                                              QuantizeType quantize_type);
+enum class CpuArchType {
+  kAuto,
+  kScalar,
+  // x86 SIMD
+  kSSE,
+  kAVX,
+  kAVX2,
+  kAVX512,
+  kAVX512VNNI,
+  kAVX512FP16,
+  // ARM SIMD
+  kNEON,
+  kSVE,
+  kSVE2
+};
+
+ZVEC_TURBO_API DistanceFunc get_distance_func(
+    MetricType metric_type, DataType data_type, QuantizeType quantize_type,
+    CpuArchType cpu_arch_type = CpuArchType::kAuto);
 
 ZVEC_TURBO_API BatchDistanceFunc get_batch_distance_func(
-    MetricType metric_type, DataType data_type, QuantizeType quantize_type);
+    MetricType metric_type, DataType data_type, QuantizeType quantize_type,
+    CpuArchType cpu_arch_type = CpuArchType::kAuto);
 
 ZVEC_TURBO_API QueryPreprocessFunc get_query_preprocess_func(
-    MetricType metric_type, DataType data_type, QuantizeType quantize_type);
+    MetricType metric_type, DataType data_type, QuantizeType quantize_type,
+    CpuArchType cpu_arch_type = CpuArchType::kAuto);
 
 // Returns the SIMD kernel for the uniform quantizer on the current CPU for
 // the given output data_type, or nullptr if no SIMD implementation is

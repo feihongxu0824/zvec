@@ -121,7 +121,7 @@ Result<GroupResults> SQLEngineImpl::execute_group_by(
   auto first_query_info = build_query_info(
       collection, query,
       std::make_shared<GroupBy>(group_by_query.group_by_field_name_,
-                                group_by_query.group_topk_,
+                                group_by_query.topk_per_group_,
                                 group_by_query.group_count_));
   if (!first_query_info) {
     return tl::make_unexpected(first_query_info.error());
@@ -144,7 +144,7 @@ Result<GroupResults> SQLEngineImpl::execute_group_by(
     auto query_info = build_query_info(
         collection, query,
         std::make_shared<GroupBy>(group_by_query.group_by_field_name_,
-                                  group_by_query.group_topk_,
+                                  group_by_query.topk_per_group_,
                                   group_by_query.group_count_));
     if (!query_info) {
       return tl::make_unexpected(query_info.error());
@@ -714,7 +714,7 @@ Result<GroupResults> SQLEngineImpl::fill_group_by_result(
       if (!typed_arr->IsNull(i)) {
         // docs already order by score
         auto &group_docs = group_to_docs[typed_arr->GetString(i)];
-        if (group_docs.size() < group_count) {
+        if (group_docs.size() < group_topk) {
           group_docs.push_back(std::move(*docs[i]));
         }
       }
@@ -732,8 +732,8 @@ Result<GroupResults> SQLEngineImpl::fill_group_by_result(
               }
               return a.docs_[0].score() < b.docs_[0].score();
             });
-  if (group_results.size() > group_topk) {
-    group_results.resize(group_topk);
+  if (group_results.size() > group_count) {
+    group_results.resize(group_count);
   }
   for (auto &group_result : group_results) {
     LOG_DEBUG("Group: %s", group_result.group_by_value_.c_str());

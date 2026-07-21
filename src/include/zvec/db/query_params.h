@@ -35,10 +35,6 @@ class ZVEC_API QueryParams {
     return type_;
   }
 
-  void set_type(IndexType type) {
-    type_ = type;
-  }
-
   float radius() const {
     return radius_;
   }
