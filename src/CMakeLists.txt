@@ -15,13 +15,14 @@ cc_directory(binding)
 # Build ALL-IN-ONE C++ Shared Libraries
 # =============================================================================
 # Merges zvec internal static libraries into shared libraries while preserving
-# C++ symbols for direct C++ linking.
+# C++ symbols for direct C++ linking. Windows uses component-owned object
+# variants so DLL export definitions never leak into static or plugin targets.
 
 include(GNUInstallDirs)
 find_package(Threads REQUIRED)
 
 function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
-    cmake_parse_arguments(ZVEC_ALLIN "EXPLICIT_EXPORTS" "" "LIBS" ${ARGN})
+    cmake_parse_arguments(ZVEC_ALLIN "" "" "LIBS;EXPORT_COMPONENTS" ${ARGN})
     if(NOT ZVEC_ALLIN_LIBS)
         message(FATAL_ERROR "zvec_add_all_in_one_shared requires LIBS")
     endif()
@@ -29,6 +30,12 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
         if(NOT TARGET ${ZVEC_ALLIN_LIB})
             message(FATAL_ERROR "Target ${ZVEC_ALLIN_LIB} is required by ${TARGET_NAME}")
+        endif()
+    endforeach()
+    foreach(ZVEC_ALLIN_EXPORT_COMPONENT ${ZVEC_ALLIN_EXPORT_COMPONENTS})
+        if(NOT ZVEC_ALLIN_EXPORT_COMPONENT IN_LIST ZVEC_ALLIN_LIBS)
+            message(FATAL_ERROR
+                "Export component ${ZVEC_ALLIN_EXPORT_COMPONENT} is not part of ${TARGET_NAME}")
         endif()
     endforeach()
 
@@ -44,7 +51,7 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
         OUTPUT_NAME "${OUTPUT_NAME}"
         POSITION_INDEPENDENT_CODE ON
     )
-    if(WIN32 AND ZVEC_ALLIN_EXPLICIT_EXPORTS)
+    if(WIN32)
         set_target_properties(${TARGET_NAME} PROPERTIES
             WINDOWS_EXPORT_ALL_SYMBOLS OFF
         )
@@ -56,17 +63,39 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     endif()
     target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
 
-    if(MSVC)
+    if(WIN32)
         foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
+            if(ZVEC_ALLIN_LIB IN_LIST ZVEC_ALLIN_EXPORT_COMPONENTS)
+                set(ZVEC_ALLIN_OBJECT_TARGET ${ZVEC_ALLIN_LIB}_export_objects)
+            else()
+                set(ZVEC_ALLIN_OBJECT_TARGET ${ZVEC_ALLIN_LIB}_objects)
+            endif()
+            if(NOT TARGET ${ZVEC_ALLIN_OBJECT_TARGET})
+                message(FATAL_ERROR
+                    "Object target ${ZVEC_ALLIN_OBJECT_TARGET} is required by ${TARGET_NAME}")
+            endif()
             target_sources(${TARGET_NAME} PRIVATE
-                $<TARGET_OBJECTS:${ZVEC_ALLIN_LIB}>
+                $<TARGET_OBJECTS:${ZVEC_ALLIN_OBJECT_TARGET}>
             )
         endforeach()
 
+        set(ZVEC_ALLIN_LINK_LIBS)
+        foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
+            get_target_property(ZVEC_ALLIN_LIB_DEPS ${ZVEC_ALLIN_LIB} LINK_LIBRARIES)
+            if(NOT ZVEC_ALLIN_LIB_DEPS)
+                continue()
+            endif()
+            foreach(ZVEC_ALLIN_LIB_DEP ${ZVEC_ALLIN_LIB_DEPS})
+                if(NOT ZVEC_ALLIN_LIB_DEP IN_LIST ZVEC_ALLIN_LIBS)
+                    list(APPEND ZVEC_ALLIN_LINK_LIBS ${ZVEC_ALLIN_LIB_DEP})
+                endif()
+            endforeach()
+        endforeach()
+        list(APPEND ZVEC_ALLIN_LINK_LIBS Threads::Threads)
+        list(REMOVE_DUPLICATES ZVEC_ALLIN_LINK_LIBS)
         target_link_libraries(${TARGET_NAME}
             PRIVATE
-                ${ZVEC_ALLIN_LIBS}
-                Threads::Threads
+                ${ZVEC_ALLIN_LINK_LIBS}
         )
     elseif(APPLE)
         foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_LIBS})
@@ -127,11 +156,7 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     )
 
     set(ZVEC_ALLIN_USE_DEFS)
-    set(ZVEC_ALLIN_USE_LIBS ${ZVEC_ALLIN_LIBS})
-    if(ZVEC_ALLIN_EXPLICIT_EXPORTS AND OUTPUT_NAME STREQUAL zvec)
-        set(ZVEC_ALLIN_USE_LIBS zvec)
-    endif()
-    foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_USE_LIBS})
+    foreach(ZVEC_ALLIN_LIB ${ZVEC_ALLIN_EXPORT_COMPONENTS})
         if(ZVEC_ALLIN_LIB STREQUAL zvec)
             list(APPEND ZVEC_ALLIN_USE_DEFS ZVEC_DB_USE_SHARED)
         elseif(ZVEC_ALLIN_LIB STREQUAL zvec_core)
@@ -169,23 +194,11 @@ function(zvec_add_all_in_one_shared TARGET_NAME OUTPUT_NAME)
     )
 endfunction()
 
-function(zvec_enable_cxx_exports TARGET_NAME)
-    if(NOT TARGET ${TARGET_NAME})
-        return()
-    endif()
-
-    foreach(ZVEC_EXPORT_DEF IN LISTS ARGN)
-        target_compile_definitions(${TARGET_NAME} PRIVATE ${ZVEC_EXPORT_DEF})
-    endforeach()
-endfunction()
-
-if(BUILD_ZVEC_SHARED)
-    zvec_enable_cxx_exports(zvec ZVEC_DB_BUILD_SHARED)
-endif()
-
 if(BUILD_ZVEC_AILEGO_SHARED)
     zvec_add_all_in_one_shared(zvec_ailego_shared zvec_ailego
         LIBS
+            zvec_ailego
+        EXPORT_COMPONENTS
             zvec_ailego
     )
 endif()
@@ -196,16 +209,22 @@ if(BUILD_ZVEC_CORE_SHARED)
             zvec_core
             zvec_ailego
             zvec_turbo
+        EXPORT_COMPONENTS
+            zvec_core
+            zvec_ailego
+            zvec_turbo
     )
 endif()
 
 if(BUILD_ZVEC_SHARED)
     zvec_add_all_in_one_shared(zvec_shared zvec
-        EXPLICIT_EXPORTS
         LIBS
             zvec
             zvec_core
             zvec_ailego
             zvec_turbo
+        EXPORT_COMPONENTS
+            zvec
+            zvec_ailego
     )
 endif()

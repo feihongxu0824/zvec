@@ -16,7 +16,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <zvec/export.h>
 
 namespace zvec {
@@ -55,79 +54,6 @@ struct ZVEC_AILEGO_API FloatHelper {
 };
 
 #if !defined(__aarch64__)
-namespace detail {
-
-inline uint16_t Float32ToFloat16Scalar(float val) {
-  uint32_t bits;
-  std::memcpy(&bits, &val, sizeof(bits));
-
-  const uint16_t sign = static_cast<uint16_t>((bits >> 16) & 0x8000U);
-  const uint32_t mantissa = bits & 0x007FFFFFU;
-  const int32_t exponent = static_cast<int32_t>((bits >> 23) & 0xFFU) - 127;
-
-  if (exponent == 128) {
-    return static_cast<uint16_t>(sign | (mantissa ? 0x7E00U : 0x7C00U));
-  }
-  if (exponent > 15) {
-    return static_cast<uint16_t>(sign | 0x7C00U);
-  }
-  if (exponent < -24) {
-    return sign;
-  }
-
-  if (exponent < -14) {
-    const uint32_t full_mantissa = mantissa | 0x00800000U;
-    const int32_t shift = -exponent - 1;
-    const uint32_t rounded = (full_mantissa + (1U << (shift - 1))) >> shift;
-    return static_cast<uint16_t>(sign | rounded);
-  }
-
-  uint32_t rounded_mantissa = mantissa + 0x00001000U;
-  uint32_t half_exponent = static_cast<uint32_t>(exponent + 15) << 10;
-  if (rounded_mantissa & 0x00800000U) {
-    rounded_mantissa = 0;
-    half_exponent += 0x0400U;
-    if (half_exponent >= 0x7C00U) {
-      return static_cast<uint16_t>(sign | 0x7C00U);
-    }
-  }
-
-  return static_cast<uint16_t>(sign | half_exponent | (rounded_mantissa >> 13));
-}
-
-inline float Float16ToFloat32Scalar(uint16_t val) {
-  const uint32_t sign = static_cast<uint32_t>(val & 0x8000U) << 16;
-  uint32_t exponent = (val >> 10) & 0x1FU;
-  uint32_t mantissa = val & 0x03FFU;
-  uint32_t bits = 0;
-
-  if (exponent == 0) {
-    if (mantissa == 0) {
-      bits = sign;
-    } else {
-      int32_t normalized_exponent = -14;
-      while ((mantissa & 0x0400U) == 0) {
-        mantissa <<= 1;
-        --normalized_exponent;
-      }
-      mantissa &= 0x03FFU;
-      bits = sign | (static_cast<uint32_t>(normalized_exponent + 127) << 23) |
-             (mantissa << 13);
-    }
-  } else if (exponent == 0x1FU) {
-    bits = sign | 0x7F800000U | (mantissa << 13);
-  } else {
-    exponent = exponent + (127 - 15);
-    bits = sign | (exponent << 23) | (mantissa << 13);
-  }
-
-  float result;
-  std::memcpy(&result, &bits, sizeof(result));
-  return result;
-}
-
-}  // namespace detail
-
 /*! Half-Precision Floating Point
  */
 class Float16 {
@@ -136,49 +62,44 @@ class Float16 {
   Float16(void) : value_(0) {}
 
   //! Constructor
-  Float16(float val) : value_(detail::Float32ToFloat16Scalar(val)) {}
+  Float16(float val) : value_(FloatHelper::ToFP16(val)) {}
 
   //! Constructor
-  Float16(double val)
-      : value_(detail::Float32ToFloat16Scalar(static_cast<float>(val))) {}
+  Float16(double val) : value_(FloatHelper::ToFP16(static_cast<float>(val))) {}
 
   //! Assigment
   Float16 &operator=(float val) {
-    this->value_ = detail::Float32ToFloat16Scalar(val);
+    this->value_ = FloatHelper::ToFP16(val);
     return *this;
   }
 
   //! Assigment
   Float16 &operator+=(float val) {
-    this->value_ = detail::Float32ToFloat16Scalar(
-        detail::Float16ToFloat32Scalar(this->value_) + val);
+    this->value_ = FloatHelper::ToFP16(FloatHelper::ToFP32(this->value_) + val);
     return *this;
   }
 
   //! Assigment
   Float16 &operator-=(float val) {
-    this->value_ = detail::Float32ToFloat16Scalar(
-        detail::Float16ToFloat32Scalar(this->value_) - val);
+    this->value_ = FloatHelper::ToFP16(FloatHelper::ToFP32(this->value_) - val);
     return *this;
   }
 
   //! Assigment
   Float16 &operator*=(float val) {
-    this->value_ = detail::Float32ToFloat16Scalar(
-        detail::Float16ToFloat32Scalar(this->value_) * val);
+    this->value_ = FloatHelper::ToFP16(FloatHelper::ToFP32(this->value_) * val);
     return *this;
   }
 
   //! Assigment
   Float16 &operator/=(float val) {
-    this->value_ = detail::Float32ToFloat16Scalar(
-        detail::Float16ToFloat32Scalar(this->value_) / val);
+    this->value_ = FloatHelper::ToFP16(FloatHelper::ToFP32(this->value_) / val);
     return *this;
   }
 
   //! Retrieve value in FP32
   operator float() const {
-    return detail::Float16ToFloat32Scalar(this->value_);
+    return FloatHelper::ToFP32(this->value_);
   }
 
   //! Equal operator
@@ -193,26 +114,22 @@ class Float16 {
 
   //! Less than operator
   bool operator<(const Float16 &rhs) const {
-    return detail::Float16ToFloat32Scalar(this->value_) <
-           detail::Float16ToFloat32Scalar(rhs.value_);
+    return FloatHelper::ToFP32(this->value_) < FloatHelper::ToFP32(rhs.value_);
   }
 
   //! Less than or equal operator
   bool operator<=(const Float16 &rhs) const {
-    return detail::Float16ToFloat32Scalar(this->value_) <=
-           detail::Float16ToFloat32Scalar(rhs.value_);
+    return FloatHelper::ToFP32(this->value_) <= FloatHelper::ToFP32(rhs.value_);
   }
 
   //! Greater than operator
   bool operator>(const Float16 &rhs) const {
-    return detail::Float16ToFloat32Scalar(this->value_) >
-           detail::Float16ToFloat32Scalar(rhs.value_);
+    return FloatHelper::ToFP32(this->value_) > FloatHelper::ToFP32(rhs.value_);
   }
 
   //! Greater than or equal operator
   bool operator>=(const Float16 &rhs) const {
-    return detail::Float16ToFloat32Scalar(this->value_) >=
-           detail::Float16ToFloat32Scalar(rhs.value_);
+    return FloatHelper::ToFP32(this->value_) >= FloatHelper::ToFP32(rhs.value_);
   }
 
   //! Calculate the absolute value
