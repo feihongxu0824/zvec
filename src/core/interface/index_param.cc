@@ -95,10 +95,7 @@ BaseIndexQueryParam::Pointer DiskAnnQueryParam::Clone() const {
 
 BaseIndexParam::BaseIndexParam(IndexType type, MetricType metric, int dim,
                                int ver)
-    : index_type(type),
-      metric_type(metric),
-      dimension(dim),
-      version(ver) {}
+    : index_type(type), metric_type(metric), dimension(dim), version(ver) {}
 BaseIndexParam::BaseIndexParam(const BaseIndexParam &) = default;
 BaseIndexParam &BaseIndexParam::operator=(const BaseIndexParam &) = default;
 BaseIndexParam::~BaseIndexParam() = default;
@@ -141,13 +138,13 @@ HNSWRabitqIndexParam::HNSWRabitqIndexParam(MetricType metric, int dim, int m,
     : BaseIndexParam(IndexType::kHNSWRabitq, metric, dim),
       m(m),
       ef_construction(ef_construction) {}
-HNSWRabitqIndexParam::HNSWRabitqIndexParam(
-    const HNSWRabitqIndexParam &) = default;
+HNSWRabitqIndexParam::HNSWRabitqIndexParam(const HNSWRabitqIndexParam &) =
+    default;
 HNSWRabitqIndexParam::HNSWRabitqIndexParam(HNSWRabitqIndexParam &&) = default;
 HNSWRabitqIndexParam &HNSWRabitqIndexParam::operator=(
     const HNSWRabitqIndexParam &) = default;
-HNSWRabitqIndexParam &HNSWRabitqIndexParam::operator=(
-    HNSWRabitqIndexParam &&) = default;
+HNSWRabitqIndexParam &HNSWRabitqIndexParam::operator=(HNSWRabitqIndexParam &&) =
+    default;
 HNSWRabitqIndexParam::~HNSWRabitqIndexParam() = default;
 
 ailego::JsonObject BaseIndexParam::SerializeToJsonObject(
