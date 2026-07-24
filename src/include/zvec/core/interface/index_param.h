@@ -286,10 +286,10 @@ class ZVEC_CORE_API BaseIndexParam : public SerializableBase {
 
   explicit BaseIndexParam(IndexType type = IndexType::kNone,
                           MetricType metric = MetricType::kL2sq, int dim = 0,
-                          int ver = 0)
-      : index_type(type), metric_type(metric), dimension(dim), version(ver) {}
-
-  virtual ~BaseIndexParam() = default;
+                          int ver = 0);
+  BaseIndexParam(const BaseIndexParam &);
+  BaseIndexParam &operator=(const BaseIndexParam &);
+  virtual ~BaseIndexParam();
 
   IndexType index_type = IndexType::kNone;
   MetricType metric_type = MetricType::kL2sq;
@@ -342,24 +342,17 @@ struct ZVEC_CORE_API IVFIndexParam : public BaseIndexParam {
   bool use_soar = false;
 
   // Constructors with delegation
-  IVFIndexParam() : BaseIndexParam(IndexType::kIVF) {}
-
+  IVFIndexParam();
   IVFIndexParam(int nlist, int niters, std::shared_ptr<BaseIndexParam> l1Index,
-                std::shared_ptr<BaseIndexParam> l2Index)
-      : BaseIndexParam(IndexType::kIVF),
-        nlist(nlist),
-        niters(niters),
-        l1Index(std::move(l1Index)),
-        l2Index(std::move(l2Index)) {}
-
+                std::shared_ptr<BaseIndexParam> l2Index);
   IVFIndexParam(MetricType metric, int dim, int nlist, int niters,
                 std::shared_ptr<BaseIndexParam> l1Index,
-                std::shared_ptr<BaseIndexParam> l2Index)
-      : BaseIndexParam(IndexType::kIVF, metric, dim),
-        nlist(nlist),
-        niters(niters),
-        l1Index(std::move(l1Index)),
-        l2Index(std::move(l2Index)) {}
+                std::shared_ptr<BaseIndexParam> l2Index);
+  IVFIndexParam(const IVFIndexParam &);
+  IVFIndexParam(IVFIndexParam &&);
+  IVFIndexParam &operator=(const IVFIndexParam &);
+  IVFIndexParam &operator=(IVFIndexParam &&);
+  ~IVFIndexParam() override;
 
   // query param:
   // topk of l1Index's param ==== IVFIndexQueryParam.nprobe
@@ -431,9 +424,7 @@ struct ZVEC_CORE_API VamanaQueryParam : public BaseIndexQueryParam {
   uint32_t prefetch_offset = kDefaultPrefetchOffset;
   uint32_t prefetch_lines = kDefaultPrefetchLines;
 
-  BaseIndexQueryParam::Pointer Clone() const override {
-    return std::make_shared<VamanaQueryParam>(*this);
-  }
+  BaseIndexQueryParam::Pointer Clone() const override;
 };
 
 struct ZVEC_CORE_API HNSWRabitqIndexParam : public BaseIndexParam {
@@ -451,17 +442,14 @@ struct ZVEC_CORE_API HNSWRabitqIndexParam : public BaseIndexParam {
   core::IndexReformer::Pointer reformer = nullptr;
 
   // Constructors with delegation
-  HNSWRabitqIndexParam() : BaseIndexParam(IndexType::kHNSWRabitq) {}
-
-  HNSWRabitqIndexParam(int m, int ef_construction)
-      : BaseIndexParam(IndexType::kHNSWRabitq),
-        m(m),
-        ef_construction(ef_construction) {}
-
-  HNSWRabitqIndexParam(MetricType metric, int dim, int m, int ef_construction)
-      : BaseIndexParam(IndexType::kHNSWRabitq, metric, dim),
-        m(m),
-        ef_construction(ef_construction) {}
+  HNSWRabitqIndexParam();
+  HNSWRabitqIndexParam(int m, int ef_construction);
+  HNSWRabitqIndexParam(MetricType metric, int dim, int m, int ef_construction);
+  HNSWRabitqIndexParam(const HNSWRabitqIndexParam &);
+  HNSWRabitqIndexParam(HNSWRabitqIndexParam &&);
+  HNSWRabitqIndexParam &operator=(const HNSWRabitqIndexParam &);
+  HNSWRabitqIndexParam &operator=(HNSWRabitqIndexParam &&);
+  ~HNSWRabitqIndexParam() override;
 
  protected:
   bool DeserializeFromJsonObject(const ailego::JsonObject &json_obj) override;

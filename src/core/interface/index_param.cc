@@ -93,6 +93,63 @@ BaseIndexQueryParam::Pointer DiskAnnQueryParam::Clone() const {
   return std::make_shared<DiskAnnQueryParam>(*this);
 }
 
+BaseIndexParam::BaseIndexParam(IndexType type, MetricType metric, int dim,
+                               int ver)
+    : index_type(type),
+      metric_type(metric),
+      dimension(dim),
+      version(ver) {}
+BaseIndexParam::BaseIndexParam(const BaseIndexParam &) = default;
+BaseIndexParam &BaseIndexParam::operator=(const BaseIndexParam &) = default;
+BaseIndexParam::~BaseIndexParam() = default;
+
+IVFIndexParam::IVFIndexParam() : BaseIndexParam(IndexType::kIVF) {}
+IVFIndexParam::IVFIndexParam(int nlist, int niters,
+                             std::shared_ptr<BaseIndexParam> l1Index,
+                             std::shared_ptr<BaseIndexParam> l2Index)
+    : BaseIndexParam(IndexType::kIVF),
+      nlist(nlist),
+      niters(niters),
+      l1Index(std::move(l1Index)),
+      l2Index(std::move(l2Index)) {}
+IVFIndexParam::IVFIndexParam(MetricType metric, int dim, int nlist, int niters,
+                             std::shared_ptr<BaseIndexParam> l1Index,
+                             std::shared_ptr<BaseIndexParam> l2Index)
+    : BaseIndexParam(IndexType::kIVF, metric, dim),
+      nlist(nlist),
+      niters(niters),
+      l1Index(std::move(l1Index)),
+      l2Index(std::move(l2Index)) {}
+IVFIndexParam::IVFIndexParam(const IVFIndexParam &) = default;
+IVFIndexParam::IVFIndexParam(IVFIndexParam &&) = default;
+IVFIndexParam &IVFIndexParam::operator=(const IVFIndexParam &) = default;
+IVFIndexParam &IVFIndexParam::operator=(IVFIndexParam &&) = default;
+IVFIndexParam::~IVFIndexParam() = default;
+
+BaseIndexQueryParam::Pointer VamanaQueryParam::Clone() const {
+  return std::make_shared<VamanaQueryParam>(*this);
+}
+
+HNSWRabitqIndexParam::HNSWRabitqIndexParam()
+    : BaseIndexParam(IndexType::kHNSWRabitq) {}
+HNSWRabitqIndexParam::HNSWRabitqIndexParam(int m, int ef_construction)
+    : BaseIndexParam(IndexType::kHNSWRabitq),
+      m(m),
+      ef_construction(ef_construction) {}
+HNSWRabitqIndexParam::HNSWRabitqIndexParam(MetricType metric, int dim, int m,
+                                           int ef_construction)
+    : BaseIndexParam(IndexType::kHNSWRabitq, metric, dim),
+      m(m),
+      ef_construction(ef_construction) {}
+HNSWRabitqIndexParam::HNSWRabitqIndexParam(
+    const HNSWRabitqIndexParam &) = default;
+HNSWRabitqIndexParam::HNSWRabitqIndexParam(HNSWRabitqIndexParam &&) = default;
+HNSWRabitqIndexParam &HNSWRabitqIndexParam::operator=(
+    const HNSWRabitqIndexParam &) = default;
+HNSWRabitqIndexParam &HNSWRabitqIndexParam::operator=(
+    HNSWRabitqIndexParam &&) = default;
+HNSWRabitqIndexParam::~HNSWRabitqIndexParam() = default;
+
 ailego::JsonObject BaseIndexParam::SerializeToJsonObject(
     bool omit_empty_value) const {
   ailego::JsonObject json_obj;
